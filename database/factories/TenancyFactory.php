@@ -30,6 +30,16 @@ class TenancyFactory extends Factory
         ];
     }
 
+    public function configure(): static
+    {
+        // Keep data consistent: the tenant belongs to the landlord who owns the unit.
+        return $this->afterCreating(function (Tenancy $tenancy) {
+            if ($tenancy->tenant->landlord_id === null) {
+                $tenancy->tenant->update(['landlord_id' => $tenancy->unit->property->owner_id]);
+            }
+        });
+    }
+
     public function ended(): static
     {
         return $this->state(fn (array $attributes) => [

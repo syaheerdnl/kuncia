@@ -34,6 +34,7 @@ class DemoSeeder extends Seeder
         $tech = User::factory()->maintenance()->create([
             'name' => 'Ali Technician',
             'email' => 'tech@sewahub.test',
+            'landlord_id' => $landlord->id,
         ]);
 
         $hostel = Property::factory()->for($landlord, 'owner')->create([
@@ -70,8 +71,8 @@ class DemoSeeder extends Seeder
         // 6 tenants occupy the first 6 units; the first one is the public demo tenant.
         /** @var list<User> $tenants */
         $tenants = [
-            User::factory()->tenant()->create(['name' => 'Aisyah Rahman', 'email' => 'tenant@sewahub.test']),
-            ...User::factory()->tenant()->count(5)->create()->all(),
+            User::factory()->tenant()->create(['name' => 'Aisyah Rahman', 'email' => 'tenant@sewahub.test', 'landlord_id' => $landlord->id]),
+            ...User::factory()->tenant()->count(5)->create(['landlord_id' => $landlord->id])->all(),
         ];
 
         $thisMonth = now()->startOfMonth();

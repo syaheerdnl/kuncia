@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Enums\TenancyStatus;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -18,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property string $email
  * @property UserRole $role
  * @property string|null $phone
+ * @property int|null $landlord_id
+ * @property-read string|null $outstanding
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -27,7 +33,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'role', 'phone'])]
+#[Fillable(['name', 'email', 'password', 'role', 'phone', 'landlord_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -73,6 +79,40 @@ class User extends Authenticatable
     public function tenancies(): HasMany
     {
         return $this->hasMany(Tenancy::class, 'tenant_id');
+    }
+
+    /**
+     * Landlord who added this tenant / staff member.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function landlord(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'landlord_id');
+    }
+
+    /** @return HasMany<User, $this> */
+    public function tenants(): HasMany
+    {
+        return $this->hasMany(User::class, 'landlord_id')->where('role', UserRole::Tenant);
+    }
+
+    /** @return HasMany<User, $this> */
+    public function staff(): HasMany
+    {
+        return $this->hasMany(User::class, 'landlord_id')->where('role', UserRole::Maintenance);
+    }
+
+    /** @return HasOne<Tenancy, $this> */
+    public function activeTenancy(): HasOne
+    {
+        return $this->hasOne(Tenancy::class, 'tenant_id')->where('status', TenancyStatus::Active);
+    }
+
+    /** @return HasManyThrough<Invoice, Tenancy, $this> */
+    public function invoices(): HasManyThrough
+    {
+        return $this->hasManyThrough(Invoice::class, Tenancy::class, 'tenant_id', 'tenancy_id');
     }
 
     /** @return HasMany<MaintenanceRequest, $this> */

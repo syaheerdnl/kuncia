@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property string $postcode
  * @property string|null $description
  * @property string|null $cover_image
+ * @property-read int|null $units_count
+ * @property-read int|null $occupied_count
  */
 #[Fillable(['owner_id', 'name', 'type', 'address', 'city', 'state', 'postcode', 'description', 'cover_image'])]
 class Property extends Model
