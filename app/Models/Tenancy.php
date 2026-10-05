@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DepositStatus;
 use App\Enums\TenancyStatus;
+use Carbon\CarbonImmutable;
 use Database\Factories\TenancyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,14 +13,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $unit_id
  * @property int $tenant_id
- * @property Carbon $start_date
- * @property Carbon|null $end_date
+ * @property CarbonImmutable $start_date
+ * @property CarbonImmutable|null $end_date
  * @property string $monthly_rent
  * @property string $deposit_amount
  * @property DepositStatus $deposit_status

@@ -4,13 +4,13 @@ namespace App\Models;
 
 use App\Enums\MaintenancePriority;
 use App\Enums\MaintenanceStatus;
+use Carbon\CarbonImmutable;
 use Database\Factories\MaintenanceRequestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string $description
  * @property MaintenancePriority $priority
  * @property MaintenanceStatus $status
- * @property Carbon|null $resolved_at
+ * @property CarbonImmutable|null $resolved_at
  */
 #[Fillable(['unit_id', 'tenant_id', 'assigned_to', 'title', 'description', 'priority', 'status', 'resolved_at'])]
 class MaintenanceRequest extends Model

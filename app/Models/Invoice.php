@@ -3,24 +3,25 @@
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $tenancy_id
  * @property string $invoice_no
- * @property Carbon $period
- * @property Carbon $issue_date
- * @property Carbon $due_date
+ * @property CarbonImmutable $period
+ * @property CarbonImmutable $issue_date
+ * @property CarbonImmutable $due_date
  * @property string $total
  * @property InvoiceStatus $status
- * @property Carbon|null $paid_at
+ * @property CarbonImmutable|null $paid_at
  */
 #[Fillable(['tenancy_id', 'invoice_no', 'period', 'issue_date', 'due_date', 'total', 'status', 'paid_at'])]
 class Invoice extends Model
@@ -41,7 +42,7 @@ class Invoice extends Model
     }
 
     /** Next running number for a month, e.g. INV-202610-0001. */
-    public static function nextNumber(Carbon $period): string
+    public static function nextNumber(CarbonInterface $period): string
     {
         $prefix = 'INV-'.$period->format('Ym').'-';
         $last = static::where('invoice_no', 'like', $prefix.'%')->max('invoice_no');

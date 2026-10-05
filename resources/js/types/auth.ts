@@ -1,7 +1,11 @@
+export type Role = 'landlord' | 'tenant' | 'maintenance';
+
 export type User = {
     id: number;
     name: string;
     email: string;
+    role: Role;
+    phone: string | null;
     avatar?: string;
     email_verified_at: string | null;
     created_at: string;
@@ -11,4 +15,5 @@ export type User = {
 
 export type Auth = {
     user: User;
+    role: Role | null;
 };

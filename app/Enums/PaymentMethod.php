@@ -8,7 +8,7 @@ enum PaymentMethod: string
 {
     use EnumHelpers;
 
-    case Toyyibpay = 'toyyibpay';
+    case ToyyibPay = 'toyyibpay';
     case Cash = 'cash';
     case Transfer = 'transfer';
 }

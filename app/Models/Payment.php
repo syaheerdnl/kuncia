@@ -4,12 +4,12 @@ namespace App\Models;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use Carbon\CarbonImmutable;
 use Database\Factories\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $reference
  * @property string|null $bill_code
  * @property PaymentStatus $status
- * @property Carbon|null $paid_at
+ * @property CarbonImmutable|null $paid_at
  */
 #[Fillable(['invoice_id', 'amount', 'method', 'reference', 'bill_code', 'status', 'paid_at'])]
 class Payment extends Model
