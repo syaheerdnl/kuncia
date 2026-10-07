@@ -12,6 +12,9 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            canRegister: boolean;
+            guestLogin: { email: string; password: string } | null;
+            isGuest: boolean;
             [key: string]: unknown;
         };
     }

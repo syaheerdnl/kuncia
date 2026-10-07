@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property UserRole $role
  * @property string|null $phone
  * @property int|null $landlord_id
+ * @property bool $is_guest
  * @property-read string|null $outstanding
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -51,6 +52,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'is_guest' => 'boolean',
         ];
     }
 

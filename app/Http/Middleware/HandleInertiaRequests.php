@@ -42,6 +42,11 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'role' => $request->user()?->role->value,
             ],
+            'canRegister' => (bool) config('kuncia.registration'),
+            'guestLogin' => config('kuncia.guest.enabled')
+                ? ['email' => config('kuncia.guest.email'), 'password' => config('kuncia.guest.password')]
+                : null,
+            'isGuest' => (bool) $request->user()?->is_guest,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -20,6 +20,8 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        abort_unless(config('kuncia.registration'), 404);
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),

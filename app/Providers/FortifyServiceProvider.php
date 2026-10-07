@@ -63,9 +63,14 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register', [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-        ]));
+        Fortify::registerView(function () {
+            // Sign-up can be turned off (family server) with KUNCIA_REGISTRATION=false
+            abort_unless(config('kuncia.registration'), 404);
+
+            return Inertia::render('auth/register', [
+                'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            ]);
+        });
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
     }
