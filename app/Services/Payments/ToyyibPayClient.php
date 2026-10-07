@@ -38,7 +38,7 @@ class ToyyibPayClient
             'categoryCode' => (string) config('services.toyyibpay.category_code'),
             // ToyyibPay allows only letters, numbers, space and "_" here.
             'billName' => $this->clean('Rent '.$invoice->invoice_no, 30),
-            'billDescription' => $this->clean('SewaHub rent '.$invoice->period->format('F Y'), 100),
+            'billDescription' => $this->clean('Kuncia rent '.$invoice->period->format('F Y'), 100),
             'billPriceSetting' => 1,
             'billPayorInfo' => 1,
             'billAmount' => (int) round($amount * 100), // cents

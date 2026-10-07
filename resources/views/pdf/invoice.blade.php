@@ -31,7 +31,7 @@
     <table class="top">
         <tr>
             <td>
-                <div class="brand">SewaHub</div>
+                <div class="brand">Kuncia</div>
                 <div class="muted">{{ $property->owner->name }}<br>{{ $property->owner->email }}</div>
             </td>
             <td class="right">
@@ -70,6 +70,6 @@
         </tbody>
     </table>
 
-    <p class="muted" style="margin-top:32px">Pay online through your SewaHub tenant account. Thank you.</p>
+    <p class="muted" style="margin-top:32px">Pay online through your Kuncia tenant account. Thank you.</p>
 </body>
 </html>

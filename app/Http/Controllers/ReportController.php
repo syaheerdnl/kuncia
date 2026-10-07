@@ -39,7 +39,7 @@ class ReportController extends Controller
             }
             fputcsv($out, ['Total', ...array_map(fn ($v) => number_format($v, 2, '.', ''), array_values($report['totals'])), number_format(array_sum($report['totals']), 2, '.', '')]);
             fclose($out);
-        }, "sewahub-income-{$year}.csv", ['Content-Type' => 'text/csv']);
+        }, "kuncia-income-{$year}.csv", ['Content-Type' => 'text/csv']);
     }
 
     private function year(Request $request): int
