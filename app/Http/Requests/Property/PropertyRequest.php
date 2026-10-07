@@ -34,7 +34,7 @@ class PropertyRequest extends FormRequest
             'state' => ['required', Rule::in(MalaysianStates::ALL)],
             'postcode' => ['required', 'digits:5'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'cover_image' => ['nullable', 'image', 'max:2048'],
+            'cover_image' => ['nullable', 'image', 'max:5120'],
         ];
     }
 }

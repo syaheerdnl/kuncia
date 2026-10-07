@@ -121,7 +121,7 @@ export default function MyMaintenance({ tickets, unit, priorities }: Props) {
                                             </div>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="photos">
-                                                    Photos (up to 3, 2MB each)
+                                                    Photos (up to 3, 5MB each)
                                                 </Label>
                                                 <Input
                                                     id="photos"

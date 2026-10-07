@@ -23,7 +23,7 @@ class StoreTicketRequest extends FormRequest
             'description' => ['required', 'string', 'max:2000'],
             'priority' => ['required', Rule::enum(MaintenancePriority::class)],
             'photos' => ['nullable', 'array', 'max:3'],
-            'photos.*' => ['image', 'max:2048'],
+            'photos.*' => ['image', 'max:5120'],
         ];
     }
 }

@@ -132,7 +132,7 @@ export function PropertyForm({
 
                     <div className="grid gap-2">
                         <Label htmlFor="cover_image">
-                            Cover photo (optional, max 2MB)
+                            Cover photo (optional, max 5MB)
                         </Label>
                         {property?.cover_url && (
                             <img
