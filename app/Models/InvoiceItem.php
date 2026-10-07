@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -29,5 +30,15 @@ class InvoiceItem extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    /**
+     * Set when this line is a tenant's share of a meter bill.
+     *
+     * @return HasOne<UtilityBillShare, $this>
+     */
+    public function utilityShare(): HasOne
+    {
+        return $this->hasOne(UtilityBillShare::class);
     }
 }

@@ -11,6 +11,9 @@ use App\Models\Property;
 use App\Models\Tenancy;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\UtilityBill;
+use App\Models\UtilityBillShare;
+use App\Models\UtilityMeter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -53,12 +56,15 @@ class GuestSandbox
         $tenancyIds = Tenancy::whereIn('unit_id', $unitIds)->pluck('id');
         $invoiceIds = Invoice::whereIn('tenancy_id', $tenancyIds)->pluck('id');
         $ticketIds = MaintenanceRequest::whereIn('unit_id', $unitIds)->pluck('id');
+        $meterIds = UtilityMeter::whereIn('property_id', $propertyIds)->pluck('id');
+        $billIds = UtilityBill::whereIn('utility_meter_id', $meterIds)->pluck('id');
 
         // Uploaded files (bill scans, ticket photos, property covers)
         $attachments = Attachment::query()
             ->where(fn ($q) => $q
                 ->where(fn ($w) => $w->where('attachable_type', (new Invoice)->getMorphClass())->whereIn('attachable_id', $invoiceIds))
-                ->orWhere(fn ($w) => $w->where('attachable_type', (new MaintenanceRequest)->getMorphClass())->whereIn('attachable_id', $ticketIds)))
+                ->orWhere(fn ($w) => $w->where('attachable_type', (new MaintenanceRequest)->getMorphClass())->whereIn('attachable_id', $ticketIds))
+                ->orWhere(fn ($w) => $w->where('attachable_type', (new UtilityBill)->getMorphClass())->whereIn('attachable_id', $billIds)))
             ->get();
         foreach ($attachments as $a) {
             Storage::disk('local')->delete($a->path);
@@ -68,6 +74,9 @@ class GuestSandbox
             Storage::disk('public')->delete((string) $cover);
         }
 
+        UtilityBillShare::whereIn('utility_bill_id', $billIds)->delete();
+        UtilityBill::whereIn('id', $billIds)->delete();
+        UtilityMeter::whereIn('id', $meterIds)->delete(); // unit links cascade
         Payment::whereIn('invoice_id', $invoiceIds)->delete();
         Invoice::whereIn('id', $invoiceIds)->delete(); // items cascade
         MaintenanceRequest::whereIn('id', $ticketIds)->delete();

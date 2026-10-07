@@ -11,6 +11,8 @@ import type {
 import { UnitDialog } from '@/components/properties/unit-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { MetersSection } from '@/components/utilities/meters-section';
+import type { Meter, MeterScan } from '@/components/utilities/types';
 import { formatRM } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +20,10 @@ type Props = {
     property: PropertyFormData & { type_label: string };
     units: UnitRow[];
     unitTypes: Option[];
+    meters: Meter[];
+    utilityTypes: Option[];
+    aiEnabled: boolean;
+    pendingScans: Record<string, MeterScan>;
 };
 
 const statusStyle: Record<UnitRow['status'], string> = {
@@ -28,7 +34,15 @@ const statusStyle: Record<UnitRow['status'], string> = {
         'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
 };
 
-export default function PropertiesShow({ property, units, unitTypes }: Props) {
+export default function PropertiesShow({
+    property,
+    units,
+    unitTypes,
+    meters,
+    utilityTypes,
+    aiEnabled,
+    pendingScans,
+}: Props) {
     const occupied = units.filter((u) => u.status === 'occupied');
     const monthlyIncome = occupied.reduce(
         (sum, u) => sum + Number(u.monthly_rent),
@@ -233,6 +247,15 @@ export default function PropertiesShow({ property, units, unitTypes }: Props) {
                         </div>
                     )}
                 </div>
+
+                <MetersSection
+                    propertyId={property.id}
+                    units={units}
+                    meters={meters}
+                    utilityTypes={utilityTypes}
+                    aiEnabled={aiEnabled}
+                    pendingScans={pendingScans}
+                />
             </div>
         </>
     );

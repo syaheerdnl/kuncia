@@ -46,6 +46,12 @@ class InvoiceChargeController extends Controller
         $this->authorizeEditable($invoice);
         abort_unless($item->invoice_id === $invoice->id, 404);
 
+        if ($item->utilityShare()->exists()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'This is a share of a meter bill. Remove the bill on the property page instead.']);
+
+            return back();
+        }
+
         if ($invoice->items()->count() <= 1) {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'An invoice needs at least one item. Void it instead.']);
 

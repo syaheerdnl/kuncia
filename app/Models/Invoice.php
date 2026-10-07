@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentStatus;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\InvoiceFactory;
@@ -61,6 +62,13 @@ class Invoice extends Model
         $seq = $last ? ((int) substr((string) $last, -4)) + 1 : 1;
 
         return $prefix.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+    }
+
+    /** Charges can still change: unpaid or overdue, and nothing paid yet. */
+    public function isOpenForCharges(): bool
+    {
+        return in_array($this->status, [InvoiceStatus::Unpaid, InvoiceStatus::Overdue], true)
+            && ! $this->payments()->where('status', PaymentStatus::Success)->exists();
     }
 
     public function recalculateTotal(): void

@@ -8,6 +8,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Tenancy;
+use App\Services\Utilities\UtilityBillService;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class InvoiceService
 {
+    public function __construct(private readonly UtilityBillService $utilities) {}
+
     /**
      * Create the monthly invoice for one tenancy. Returns null when the tenancy
      * does not cover that month or the invoice already exists (safe to re-run).
@@ -45,6 +48,7 @@ class InvoiceService
                 'amount' => $tenancy->monthly_rent,
             ]);
             $invoice->recalculateTotal();
+            $this->utilities->attachPending($invoice);
 
             return $invoice;
         });
@@ -162,6 +166,9 @@ class InvoiceService
             throw ValidationException::withMessages(['invoice' => 'Invoices with payments cannot be voided.']);
         }
 
-        $invoice->update(['status' => InvoiceStatus::Void]);
+        DB::transaction(function () use ($invoice) {
+            $invoice->update(['status' => InvoiceStatus::Void]);
+            $this->utilities->release($invoice);
+        });
     }
 }

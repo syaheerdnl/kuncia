@@ -13,11 +13,13 @@ use App\Enums\TenancyStatus;
 use App\Enums\UnitStatus;
 use App\Enums\UnitType;
 use App\Enums\UserRole;
+use App\Enums\UtilityType;
 use App\Models\Invoice;
 use App\Models\MaintenanceRequest;
 use App\Models\Tenancy;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\Utilities\UtilityBillService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 
@@ -111,6 +113,18 @@ class SampleData
         }
 
         $units[9]->update(['status' => UnitStatus::Maintenance]);
+
+        // Meters: one bill per meter, split between the occupied rooms on it.
+        $blockA = $hostel->meters()->create(['type' => UtilityType::Electricity, 'label' => 'TNB - Block A', 'account_no' => '220012345601']);
+        $blockA->units()->sync(collect($units)->slice(0, 4)->pluck('id'));
+        $blockB = $hostel->meters()->create(['type' => UtilityType::Electricity, 'label' => 'TNB - Block B']);
+        $blockB->units()->sync(collect($units)->slice(4, 2)->pluck('id'));
+        $water = $hostel->meters()->create(['type' => UtilityType::Water, 'label' => 'Air Melaka']);
+        $water->units()->sync(collect($units)->slice(0, 6)->pluck('id'));
+        $houseTnb = $house->meters()->create(['type' => UtilityType::Electricity, 'label' => 'TNB']);
+        $houseTnb->units()->sync(collect($units)->slice(6, 4)->pluck('id'));
+
+        app(UtilityBillService::class)->record($blockA, $thisMonth->subMonth(), 186.40);
 
         $tickets = [
             ['Aircond not cold', 'Blowing warm air since Monday, remote shows error E5.', MaintenancePriority::High, MaintenanceStatus::Open, null],

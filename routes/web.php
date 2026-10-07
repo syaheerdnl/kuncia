@@ -14,6 +14,8 @@ use App\Http\Controllers\Tenant\MyMaintenanceController;
 use App\Http\Controllers\Tenant\OnlinePaymentController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UnitController;
+use App\Http\Controllers\UtilityBillController;
+use App\Http\Controllers\UtilityMeterController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
@@ -40,6 +42,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
         Route::post('maintenance/{ticket}/assign', [MaintenanceController::class, 'assign'])->name('maintenance.assign');
         Route::post('staff', [MaintenanceController::class, 'storeStaff'])->name('staff.store');
+        Route::post('properties/{property}/meters', [UtilityMeterController::class, 'store'])->name('meters.store');
+        Route::put('meters/{meter}', [UtilityMeterController::class, 'update'])->name('meters.update');
+        Route::delete('meters/{meter}', [UtilityMeterController::class, 'destroy'])->name('meters.destroy');
+        Route::post('meters/{meter}/bills', [UtilityBillController::class, 'store'])->name('meters.bills.store');
+        Route::post('meters/{meter}/scan', [UtilityBillController::class, 'scan'])->name('meters.scan');
+        Route::delete('meters/{meter}/scan', [UtilityBillController::class, 'dismiss'])->name('meters.scan.dismiss');
+        Route::delete('utility-bills/{bill}', [UtilityBillController::class, 'destroy'])->name('utility-bills.destroy');
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     });

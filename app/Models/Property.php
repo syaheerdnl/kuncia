@@ -55,6 +55,12 @@ class Property extends Model
         return $this->hasManyThrough(Tenancy::class, Unit::class);
     }
 
+    /** @return HasMany<UtilityMeter, $this> */
+    public function meters(): HasMany
+    {
+        return $this->hasMany(UtilityMeter::class);
+    }
+
     /** @return MorphMany<Attachment, $this> */
     public function attachments(): MorphMany
     {

@@ -6,11 +6,14 @@ use App\Enums\PropertyType;
 use App\Enums\TenancyStatus;
 use App\Enums\UnitStatus;
 use App\Enums\UnitType;
+use App\Enums\UtilityType;
 use App\Http\Requests\Property\PropertyRequest;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\Ai\GeminiBillReader;
 use App\Support\MalaysianStates;
+use App\Support\MeterData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -73,7 +76,7 @@ class PropertyController extends Controller
         return to_route('properties.show', $property);
     }
 
-    public function show(Property $property): Response
+    public function show(Request $request, Property $property, GeminiBillReader $reader): Response
     {
         Gate::authorize('view', $property);
 
@@ -96,6 +99,14 @@ class PropertyController extends Controller
                 'tenant' => $u->activeTenancy?->tenant->name,
             ]),
             'unitTypes' => UnitType::options(),
+            'meters' => MeterData::forProperty($property),
+            'utilityTypes' => UtilityType::options(),
+            'aiEnabled' => $reader->configured(),
+            'pendingScans' => (object) $property->meters()->pluck('id')
+                ->mapWithKeys(fn (int $id) => [$id => $request->session()->get("meter_scan.{$id}")])
+                ->filter()
+                ->map(fn (array $scan) => collect($scan)->except(['file_path'])->all())
+                ->all(),
         ]);
     }
 
@@ -138,6 +149,12 @@ class PropertyController extends Controller
 
         if ($property->tenancies()->exists()) {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'This property has tenancy history and cannot be deleted.']);
+
+            return back();
+        }
+
+        if ($property->meters()->whereHas('bills')->exists()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Remove the meter bills on this property first.']);
 
             return back();
         }
