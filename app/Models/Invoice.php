@@ -7,6 +7,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +40,16 @@ class Invoice extends Model
             'status' => InvoiceStatus::class,
             'paid_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Invoices for units owned by this landlord.
+     *
+     * @param  Builder<Invoice>  $query
+     */
+    public function scopeForLandlord(Builder $query, User $landlord): void
+    {
+        $query->whereHas('tenancy.unit.property', fn ($q) => $q->where('owner_id', $landlord->id));
     }
 
     /** Next running number for a month, e.g. INV-202610-0001. */
