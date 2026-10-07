@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceChargeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TenancyController;
 use App\Http\Controllers\Tenant\MyInvoiceController;
@@ -17,9 +19,9 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 
-    // Landlord area — placeholders are swapped for real controllers module by module.
+    // Landlord area
     Route::middleware('role:landlord')->group(function () {
         Route::resource('properties', PropertyController::class);
         Route::resource('properties.units', UnitController::class)->shallow()->only(['store', 'update', 'destroy']);
@@ -38,7 +40,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
         Route::post('maintenance/{ticket}/assign', [MaintenanceController::class, 'assign'])->name('maintenance.assign');
         Route::post('staff', [MaintenanceController::class, 'storeStaff'])->name('staff.store');
-        Route::inertia('reports', 'coming-soon', ['title' => 'Reports'])->name('reports.index');
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     });
 
     // Landlord or tenant (policy decides)
