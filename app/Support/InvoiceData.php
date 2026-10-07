@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Attachment;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
@@ -29,7 +30,7 @@ class InvoiceData
     /** @return array<string, mixed> */
     public static function detail(Invoice $invoice, float $outstanding): array
     {
-        $invoice->loadMissing(['items', 'payments', 'tenancy.tenant', 'tenancy.unit.property']);
+        $invoice->loadMissing(['items', 'payments', 'attachments', 'tenancy.tenant', 'tenancy.unit.property']);
 
         return [
             ...self::row($invoice),
@@ -42,6 +43,11 @@ class InvoiceData
                 'id' => $i->id,
                 'description' => $i->description,
                 'amount' => $i->amount,
+            ]),
+            'bills' => $invoice->attachments->map(fn (Attachment $a) => [
+                'id' => $a->id,
+                'name' => $a->original_name,
+                'url' => route('attachments.show', $a),
             ]),
             'payments' => $invoice->payments->sortByDesc('id')->values()->map(fn (Payment $p) => [
                 'id' => $p->id,

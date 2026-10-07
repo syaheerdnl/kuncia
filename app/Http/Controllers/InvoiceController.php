@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Http\Requests\Invoice\RecordPaymentRequest;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Services\Ai\GeminiBillReader;
 use App\Services\InvoiceService;
 use App\Support\InvoiceData;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -64,13 +65,15 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function show(Invoice $invoice): Response
+    public function show(Request $request, Invoice $invoice, GeminiBillReader $reader): Response
     {
         Gate::authorize('update', $invoice);
 
         return Inertia::render('invoices/show', [
             'invoice' => InvoiceData::detail($invoice, $this->invoices->outstanding($invoice)),
             'canManage' => true,
+            'aiBillReader' => $reader->configured(),
+            'pendingScan' => $request->session()->get(InvoiceChargeController::scanKey($invoice)),
         ]);
     }
 

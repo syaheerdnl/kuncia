@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    // FPX / card payments. Sandbox: https://dev.toyyibpay.com, live: https://toyyibpay.com
+    'toyyibpay' => [
+        'url' => env('TOYYIBPAY_URL', 'https://dev.toyyibpay.com'),
+        'secret_key' => env('TOYYIBPAY_SECRET_KEY'),
+        'category_code' => env('TOYYIBPAY_CATEGORY_CODE'),
+    ],
+
+    // Reads utility bills (TNB / SAMB etc.) from a photo, screenshot or PDF.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
+    ],
+
 ];

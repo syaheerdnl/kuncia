@@ -1,19 +1,38 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Ban, FileDown } from 'lucide-react';
+import { ArrowLeft, Ban, CreditCard, FileDown, Paperclip, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import InvoiceChargeController from '@/actions/App/Http/Controllers/InvoiceChargeController';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
 import MyInvoiceController from '@/actions/App/Http/Controllers/Tenant/MyInvoiceController';
+import OnlinePaymentController from '@/actions/App/Http/Controllers/Tenant/OnlinePaymentController';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { AddChargeDialog, ScanBillButton, ScanResultCard } from '@/components/invoices/charge-tools';
 import { RecordPaymentDialog } from '@/components/invoices/record-payment-dialog';
-import type { InvoiceDetail } from '@/components/invoices/types';
+import type { BillScan, InvoiceDetail } from '@/components/invoices/types';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatRM } from '@/lib/format';
 
-type Props = { invoice: InvoiceDetail; canManage: boolean };
+type Props = {
+    invoice: InvoiceDetail;
+    canManage: boolean;
+    onlinePayment?: boolean;
+    aiBillReader?: boolean;
+    pendingScan?: BillScan | null;
+};
 
-export default function InvoiceShow({ invoice, canManage }: Props) {
+export default function InvoiceShow({ invoice, canManage, onlinePayment = false, aiBillReader = false, pendingScan = null }: Props) {
     const open = invoice.status === 'unpaid' || invoice.status === 'overdue';
     const back = canManage ? InvoiceController.index() : MyInvoiceController.index();
+    const [paying, setPaying] = useState(false);
+    // Charges can change only while unpaid and before any successful payment
+    const editable = canManage && open && !invoice.payments.some((p) => p.status === 'success');
+
+    const payOnline = () => {
+        setPaying(true);
+        // Server creates a ToyyibPay bill and redirects the browser to the FPX page
+        router.post(OnlinePaymentController.pay.url(invoice.id), {}, { onFinish: () => setPaying(false) });
+    };
 
     return (
         <>
@@ -39,8 +58,19 @@ export default function InvoiceShow({ invoice, canManage }: Props) {
                                 <FileDown /> PDF
                             </a>
                         </Button>
+                        {!canManage && onlinePayment && open && Number(invoice.outstanding) > 0 && (
+                            <Button onClick={payOnline} disabled={paying}>
+                                <CreditCard /> {paying ? 'Redirecting…' : `Pay ${formatRM(invoice.outstanding)} with FPX`}
+                            </Button>
+                        )}
                         {canManage && open && (
                             <>
+                                {editable && (
+                                    <>
+                                        <AddChargeDialog invoiceId={invoice.id} />
+                                        <ScanBillButton invoiceId={invoice.id} enabled={aiBillReader} />
+                                    </>
+                                )}
                                 <RecordPaymentDialog invoiceId={invoice.id} outstanding={invoice.outstanding} />
                                 {invoice.payments.length === 0 && (
                                     <ConfirmDialog
@@ -59,6 +89,8 @@ export default function InvoiceShow({ invoice, canManage }: Props) {
                         )}
                     </div>
                 </div>
+
+                {editable && pendingScan && <ScanResultCard invoiceId={invoice.id} scan={pendingScan} />}
 
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                     {[
@@ -83,14 +115,43 @@ export default function InvoiceShow({ invoice, canManage }: Props) {
                                     <tr key={i.id} className="border-b">
                                         <td className="px-4 py-2">{i.description}</td>
                                         <td className="px-4 py-2 text-right">{formatRM(i.amount)}</td>
+                                        <td className="w-10 px-2 py-2 text-right">
+                                            {editable && invoice.items.length > 1 && (
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    aria-label={`Remove ${i.description}`}
+                                                    onClick={() =>
+                                                        router.delete(InvoiceChargeController.destroy.url({ invoice: invoice.id, item: i.id }), { preserveScroll: true })
+                                                    }
+                                                >
+                                                    <Trash2 />
+                                                </Button>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                                 <tr className="font-semibold">
                                     <td className="px-4 py-2 text-right">Total</td>
                                     <td className="px-4 py-2 text-right">{formatRM(invoice.total)}</td>
+                                    <td />
                                 </tr>
                             </tbody>
                         </table>
+                        {invoice.bills.length > 0 && (
+                            <div className="border-t p-4">
+                                <p className="mb-2 text-xs font-medium text-muted-foreground">Utility bills attached</p>
+                                <ul className="space-y-1 text-sm">
+                                    {invoice.bills.map((b) => (
+                                        <li key={b.id}>
+                                            <a href={b.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline">
+                                                <Paperclip className="size-3.5" /> {b.name}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
 
                     <div className="rounded-xl border">

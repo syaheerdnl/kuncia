@@ -13,6 +13,15 @@ const styles: Record<string, string> = {
     unpaid: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
     overdue: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
     void: 'bg-muted text-muted-foreground line-through',
+    // maintenance status
+    open: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300',
+    in_progress: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    resolved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+    closed: 'bg-muted text-muted-foreground',
+    // priority
+    high: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    medium: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    low: 'bg-muted text-muted-foreground',
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {

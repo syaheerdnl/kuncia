@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Services\InvoiceService;
+use App\Services\Payments\ToyyibPayClient;
 use App\Support\InvoiceData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -30,13 +31,14 @@ class MyInvoiceController extends Controller
         return Inertia::render('my/invoices', ['invoices' => $invoices]);
     }
 
-    public function show(Invoice $invoice): Response
+    public function show(Invoice $invoice, ToyyibPayClient $toyyibpay): Response
     {
         Gate::authorize('view', $invoice);
 
         return Inertia::render('invoices/show', [
             'invoice' => InvoiceData::detail($invoice, $this->invoices->outstanding($invoice)),
             'canManage' => false,
+            'onlinePayment' => $toyyibpay->configured(),
         ]);
     }
 }

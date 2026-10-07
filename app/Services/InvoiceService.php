@@ -123,6 +123,39 @@ class InvoiceService
         });
     }
 
+    /**
+     * Mark a pending online payment as successful. Safe to call twice
+     * (return URL and callback can both arrive).
+     */
+    public function confirmOnlinePayment(Payment $payment, ?string $reference = null): void
+    {
+        DB::transaction(function () use ($payment, $reference) {
+            $payment = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
+
+            if ($payment->status === PaymentStatus::Success) {
+                return;
+            }
+
+            $payment->update([
+                'status' => PaymentStatus::Success,
+                'reference' => $reference ?? $payment->reference,
+                'paid_at' => now(),
+            ]);
+
+            $invoice = $payment->invoice;
+            if ($this->outstanding($invoice) <= 0) {
+                $invoice->update(['status' => InvoiceStatus::Paid, 'paid_at' => now()]);
+            }
+        });
+    }
+
+    public function failOnlinePayment(Payment $payment): void
+    {
+        if ($payment->status === PaymentStatus::Pending) {
+            $payment->update(['status' => PaymentStatus::Failed]);
+        }
+    }
+
     public function void(Invoice $invoice): void
     {
         if ($invoice->payments()->where('status', PaymentStatus::Success)->exists()) {
