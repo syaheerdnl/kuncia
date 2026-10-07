@@ -17,7 +17,14 @@ export type InvoiceDetail = InvoiceRow & {
     outstanding: string;
     items: { id: number; description: string; amount: string }[];
     bills: { id: number; name: string; url: string }[];
-    payments: { id: number; amount: string; method: string; reference: string | null; status: string; paid_at: string | null }[];
+    payments: {
+        id: number;
+        amount: string;
+        method: string;
+        reference: string | null;
+        status: string;
+        paid_at: string | null;
+    }[];
 };
 
 export type Paginated<T> = {

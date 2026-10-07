@@ -24,7 +24,11 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem, Role } from '@/types';
 
-const dashboardItem: NavItem = { title: 'Dashboard', href: dashboard(), icon: LayoutGrid };
+const dashboardItem: NavItem = {
+    title: 'Dashboard',
+    href: dashboard(),
+    icon: LayoutGrid,
+};
 
 const navByRole: Record<Role, NavItem[]> = {
     landlord: [

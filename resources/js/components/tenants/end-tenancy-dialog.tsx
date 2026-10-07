@@ -21,7 +21,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-export function EndTenancyDialog({ tenancyId, unitLabel }: { tenancyId: number; unitLabel: string }) {
+export function EndTenancyDialog({
+    tenancyId,
+    unitLabel,
+}: {
+    tenancyId: number;
+    unitLabel: string;
+}) {
     const [open, setOpen] = useState(false);
     const today = new Date().toISOString().slice(0, 10);
 
@@ -35,7 +41,9 @@ export function EndTenancyDialog({ tenancyId, unitLabel }: { tenancyId: number; 
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>End tenancy</DialogTitle>
-                    <DialogDescription>{unitLabel} will become vacant again.</DialogDescription>
+                    <DialogDescription>
+                        {unitLabel} will become vacant again.
+                    </DialogDescription>
                 </DialogHeader>
                 <Form
                     {...TenancyController.end.form(tenancyId)}
@@ -47,23 +55,40 @@ export function EndTenancyDialog({ tenancyId, unitLabel }: { tenancyId: number; 
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="end_date">Move-out date</Label>
-                                <Input id="end_date" name="end_date" type="date" defaultValue={today} required />
+                                <Input
+                                    id="end_date"
+                                    name="end_date"
+                                    type="date"
+                                    defaultValue={today}
+                                    required
+                                />
                                 <InputError message={errors.end_date} />
                             </div>
                             <div className="grid gap-2">
                                 <Label>Deposit</Label>
-                                <Select name="deposit_status" defaultValue="refunded">
+                                <Select
+                                    name="deposit_status"
+                                    defaultValue="refunded"
+                                >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="refunded">Refunded to tenant</SelectItem>
-                                        <SelectItem value="forfeited">Forfeited (damage / unpaid rent)</SelectItem>
+                                        <SelectItem value="refunded">
+                                            Refunded to tenant
+                                        </SelectItem>
+                                        <SelectItem value="forfeited">
+                                            Forfeited (damage / unpaid rent)
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <InputError message={errors.deposit_status} />
                             </div>
-                            <Button variant="destructive" disabled={processing} className="w-full">
+                            <Button
+                                variant="destructive"
+                                disabled={processing}
+                                className="w-full"
+                            >
                                 End tenancy
                             </Button>
                         </>

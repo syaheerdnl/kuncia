@@ -14,12 +14,23 @@ export default function MyInvoices({ invoices }: { invoices: InvoiceRow[] }) {
         <>
             <Head title="My invoices" />
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-                <Heading title="My invoices" description="Your monthly rent bills" />
+                <Heading
+                    title="My invoices"
+                    description="Your monthly rent bills"
+                />
                 <div className="max-w-xs rounded-xl border p-4">
                     <p className="text-xs text-muted-foreground">Amount due</p>
-                    <p className={`mt-1 text-2xl font-semibold ${due > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600'}`}>{formatRM(due)}</p>
+                    <p
+                        className={`mt-1 text-2xl font-semibold ${due > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600'}`}
+                    >
+                        {formatRM(due)}
+                    </p>
                 </div>
-                <InvoiceTable invoices={invoices} href={(id) => MyInvoiceController.show(id)} showTenant={false} />
+                <InvoiceTable
+                    invoices={invoices}
+                    href={(id) => MyInvoiceController.show(id)}
+                    showTenant={false}
+                />
             </div>
         </>
     );

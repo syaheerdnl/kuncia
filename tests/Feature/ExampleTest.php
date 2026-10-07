@@ -1,7 +1,9 @@
 <?php
 
-test('returns a successful response', function () {
-    $response = $this->get(route('home'));
+test('home redirects to the dashboard', function () {
+    $this->get(route('home'))->assertRedirect('/dashboard');
+});
 
-    $response->assertOk();
+test('guests end up on the login page', function () {
+    $this->get('/dashboard')->assertRedirect(route('login'));
 });

@@ -23,7 +23,13 @@ import {
 } from '@/components/ui/select';
 import { formatRM } from '@/lib/format';
 
-export function RecordPaymentDialog({ invoiceId, outstanding }: { invoiceId: number; outstanding: string }) {
+export function RecordPaymentDialog({
+    invoiceId,
+    outstanding,
+}: {
+    invoiceId: number;
+    outstanding: string;
+}) {
     const [open, setOpen] = useState(false);
     const today = new Date().toISOString().slice(0, 10);
 
@@ -37,7 +43,10 @@ export function RecordPaymentDialog({ invoiceId, outstanding }: { invoiceId: num
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Record payment</DialogTitle>
-                    <DialogDescription>Cash or bank transfer received. Balance due: {formatRM(outstanding)}</DialogDescription>
+                    <DialogDescription>
+                        Cash or bank transfer received. Balance due:{' '}
+                        {formatRM(outstanding)}
+                    </DialogDescription>
                 </DialogHeader>
                 <Form
                     {...InvoiceController.recordPayment.form(invoiceId)}
@@ -50,12 +59,28 @@ export function RecordPaymentDialog({ invoiceId, outstanding }: { invoiceId: num
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="amount">Amount (RM)</Label>
-                                    <Input id="amount" name="amount" type="number" step="0.01" defaultValue={outstanding} required />
+                                    <Input
+                                        id="amount"
+                                        name="amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={outstanding}
+                                        required
+                                    />
                                     <InputError message={errors.amount} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="paid_at">Date received</Label>
-                                    <Input id="paid_at" name="paid_at" type="date" defaultValue={today} max={today} required />
+                                    <Label htmlFor="paid_at">
+                                        Date received
+                                    </Label>
+                                    <Input
+                                        id="paid_at"
+                                        name="paid_at"
+                                        type="date"
+                                        defaultValue={today}
+                                        max={today}
+                                        required
+                                    />
                                     <InputError message={errors.paid_at} />
                                 </div>
                             </div>
@@ -66,15 +91,25 @@ export function RecordPaymentDialog({ invoiceId, outstanding }: { invoiceId: num
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="transfer">Bank transfer</SelectItem>
-                                        <SelectItem value="cash">Cash</SelectItem>
+                                        <SelectItem value="transfer">
+                                            Bank transfer
+                                        </SelectItem>
+                                        <SelectItem value="cash">
+                                            Cash
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <InputError message={errors.method} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="reference">Reference (optional)</Label>
-                                <Input id="reference" name="reference" placeholder="e.g. DuitNow ref / receipt no." />
+                                <Label htmlFor="reference">
+                                    Reference (optional)
+                                </Label>
+                                <Input
+                                    id="reference"
+                                    name="reference"
+                                    placeholder="e.g. DuitNow ref / receipt no."
+                                />
                                 <InputError message={errors.reference} />
                             </div>
                             <Button disabled={processing} className="w-full">

@@ -20,7 +20,13 @@ type Props = {
     onConfirm: () => void;
 };
 
-export function ConfirmDialog({ trigger, title, description, confirmLabel = 'Delete', onConfirm }: Props) {
+export function ConfirmDialog({
+    trigger,
+    title,
+    description,
+    confirmLabel = 'Delete',
+    onConfirm,
+}: Props) {
     const [open, setOpen] = useState(false);
 
     return (

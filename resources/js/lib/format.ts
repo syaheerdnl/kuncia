@@ -1,4 +1,7 @@
-const rm = new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' });
+const rm = new Intl.NumberFormat('en-MY', {
+    style: 'currency',
+    currency: 'MYR',
+});
 
 /** "RM 1,234.50" */
 export function formatRM(value: number | string | null | undefined): string {

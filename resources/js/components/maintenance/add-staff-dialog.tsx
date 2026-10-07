@@ -28,9 +28,16 @@ export function AddStaffDialog() {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Add maintenance staff</DialogTitle>
-                    <DialogDescription>They log in with "Forgot password" and only see tickets you assign to them.</DialogDescription>
+                    <DialogDescription>
+                        They log in with "Forgot password" and only see tickets
+                        you assign to them.
+                    </DialogDescription>
                 </DialogHeader>
-                <Form {...MaintenanceController.storeStaff.form()} onSuccess={() => setOpen(false)} className="space-y-4">
+                <Form
+                    {...MaintenanceController.storeStaff.form()}
+                    onSuccess={() => setOpen(false)}
+                    className="space-y-4"
+                >
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
@@ -40,12 +47,22 @@ export function AddStaffDialog() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="staff-email">Email</Label>
-                                <Input id="staff-email" name="email" type="email" required />
+                                <Input
+                                    id="staff-email"
+                                    name="email"
+                                    type="email"
+                                    required
+                                />
                                 <InputError message={errors.email} />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="staff-phone">Phone</Label>
-                                <Input id="staff-phone" name="phone" placeholder="012-3456789" required />
+                                <Input
+                                    id="staff-phone"
+                                    name="phone"
+                                    placeholder="012-3456789"
+                                    required
+                                />
                                 <InputError message={errors.phone} />
                             </div>
                             <Button disabled={processing} className="w-full">

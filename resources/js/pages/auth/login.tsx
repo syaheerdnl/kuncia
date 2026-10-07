@@ -27,10 +27,13 @@ export default function Login({ status, canResetPassword }: Props) {
                 <div className="mb-2 rounded-lg border border-dashed p-3 text-center text-sm">
                     <p className="font-medium">Just looking around?</p>
                     <p className="text-muted-foreground">
-                        Try the guest account: <span className="font-mono">{guestLogin.email}</span> /{' '}
+                        Try the guest account:{' '}
+                        <span className="font-mono">{guestLogin.email}</span> /{' '}
                         <span className="font-mono">{guestLogin.password}</span>
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">Sample data, resets every night.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Sample data, resets every night.
+                    </p>
                 </div>
             )}
 

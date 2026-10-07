@@ -13,21 +13,36 @@ import {
 } from '@/components/ui/select';
 
 type Props = {
-    form: { action: string; method: 'get' | 'post' | 'put' | 'patch' | 'delete' };
+    form: {
+        action: string;
+        method: 'get' | 'post' | 'put' | 'patch' | 'delete';
+    };
     types: Option[];
     states: string[];
     property?: PropertyFormData;
     submitLabel: string;
 };
 
-export function PropertyForm({ form, types, states, property, submitLabel }: Props) {
+export function PropertyForm({
+    form,
+    types,
+    states,
+    property,
+    submitLabel,
+}: Props) {
     return (
         <Form {...form} className="max-w-2xl space-y-6">
             {({ processing, errors }) => (
                 <>
                     <div className="grid gap-2">
                         <Label htmlFor="name">Property name</Label>
-                        <Input id="name" name="name" defaultValue={property?.name} placeholder="e.g. Hostel Seri Durian Tunggal" required />
+                        <Input
+                            id="name"
+                            name="name"
+                            defaultValue={property?.name}
+                            placeholder="e.g. Hostel Seri Durian Tunggal"
+                            required
+                        />
                         <InputError message={errors.name} />
                     </div>
 
@@ -50,14 +65,25 @@ export function PropertyForm({ form, types, states, property, submitLabel }: Pro
 
                     <div className="grid gap-2">
                         <Label htmlFor="address">Address</Label>
-                        <Input id="address" name="address" defaultValue={property?.address} placeholder="No, Jalan, Taman" required />
+                        <Input
+                            id="address"
+                            name="address"
+                            defaultValue={property?.address}
+                            placeholder="No, Jalan, Taman"
+                            required
+                        />
                         <InputError message={errors.address} />
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div className="grid gap-2">
                             <Label htmlFor="city">City</Label>
-                            <Input id="city" name="city" defaultValue={property?.city} required />
+                            <Input
+                                id="city"
+                                name="city"
+                                defaultValue={property?.city}
+                                required
+                            />
                             <InputError message={errors.city} />
                         </div>
                         <div className="grid gap-2">
@@ -78,13 +104,22 @@ export function PropertyForm({ form, types, states, property, submitLabel }: Pro
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="postcode">Postcode</Label>
-                            <Input id="postcode" name="postcode" inputMode="numeric" maxLength={5} defaultValue={property?.postcode} required />
+                            <Input
+                                id="postcode"
+                                name="postcode"
+                                inputMode="numeric"
+                                maxLength={5}
+                                defaultValue={property?.postcode}
+                                required
+                            />
                             <InputError message={errors.postcode} />
                         </div>
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="description">Description (optional)</Label>
+                        <Label htmlFor="description">
+                            Description (optional)
+                        </Label>
                         <textarea
                             id="description"
                             name="description"
@@ -96,11 +131,22 @@ export function PropertyForm({ form, types, states, property, submitLabel }: Pro
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="cover_image">Cover photo (optional, max 2MB)</Label>
+                        <Label htmlFor="cover_image">
+                            Cover photo (optional, max 2MB)
+                        </Label>
                         {property?.cover_url && (
-                            <img src={property.cover_url} alt="" className="h-32 w-56 rounded-md object-cover" />
+                            <img
+                                src={property.cover_url}
+                                alt=""
+                                className="h-32 w-56 rounded-md object-cover"
+                            />
                         )}
-                        <Input id="cover_image" name="cover_image" type="file" accept="image/*" />
+                        <Input
+                            id="cover_image"
+                            name="cover_image"
+                            type="file"
+                            accept="image/*"
+                        />
                         <InputError message={errors.cover_image} />
                     </div>
 

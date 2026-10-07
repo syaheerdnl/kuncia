@@ -29,10 +29,15 @@ export function AddTenantDialog() {
                 <DialogHeader>
                     <DialogTitle>Add tenant</DialogTitle>
                     <DialogDescription>
-                        The tenant can log in later using "Forgot password" with this email.
+                        The tenant can log in later using "Forgot password" with
+                        this email.
                     </DialogDescription>
                 </DialogHeader>
-                <Form {...TenantController.store.form()} onSuccess={() => setOpen(false)} className="space-y-4">
+                <Form
+                    {...TenantController.store.form()}
+                    onSuccess={() => setOpen(false)}
+                    className="space-y-4"
+                >
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
@@ -42,12 +47,22 @@ export function AddTenantDialog() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email</Label>
-                                <Input id="email" name="email" type="email" required />
+                                <Input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    required
+                                />
                                 <InputError message={errors.email} />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="phone">Phone</Label>
-                                <Input id="phone" name="phone" placeholder="012-3456789" required />
+                                <Input
+                                    id="phone"
+                                    name="phone"
+                                    placeholder="012-3456789"
+                                    required
+                                />
                                 <InputError message={errors.phone} />
                             </div>
                             <Button disabled={processing} className="w-full">
