@@ -9,9 +9,11 @@ main() {
 
     git pull --ff-only origin main
     composer install --no-dev --optimize-autoloader --no-interaction
+    # Clear cached routes/config first: the build reads routes for Wayfinder.
+    php artisan optimize:clear
+    php artisan migrate --force
     npm ci --no-audit --no-fund
     npm run build
-    php artisan migrate --force
     php artisan optimize
     php artisan queue:restart
 }
