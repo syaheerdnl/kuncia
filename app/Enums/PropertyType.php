@@ -12,4 +12,5 @@ enum PropertyType: string
     case House = 'house';
     case Apartment = 'apartment';
     case Room = 'room';
+    case Shop = 'shop';
 }
