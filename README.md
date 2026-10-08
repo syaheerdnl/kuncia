@@ -23,7 +23,7 @@ Three roles: **landlord**, **tenant** and **maintenance staff**.
 - Invoices made automatically on the 1st of every month and marked overdue when unpaid
 - Extra charges on an invoice, PDF download, and cash or bank transfer payments recorded by hand
 - Utility bills per meter (TNB, SAMB, etc). One meter can cover several units, like one shop floor. Each bill is split equally between the tenants renting that month and added to their open invoice
-- Bill reading with the Gemini API: upload a photo of the bill, it reads the amount and period, and you confirm before saving
+- Bill scanning with the Gemini API: upload a photo or PDF of a TNB or water bill, Gemini reads the amount and billing period, and you confirm before it is saved. Works on a meter (to split the bill) or straight onto one invoice
 - Dashboard with occupancy, collected vs billed, overdue rent and leases ending soon
 
 **Tenant**
@@ -41,7 +41,7 @@ Online payment through ToyyibPay (FPX) is built and tested against the ToyyibPay
 
 - Laravel 13, PHP 8.3, MySQL
 - Inertia + React 19, TypeScript, Tailwind CSS 4, shadcn/ui
-- Gemini API for bill reading
+- Gemini API for bill scanning
 - Pest for tests, PHPStan level 7, Pint
 
 ## How it runs
@@ -64,7 +64,7 @@ Demo accounts (password `password`): `landlord@kuncia.test`, `tenant@kuncia.test
 
 Optional `.env` keys:
 
-- `GEMINI_API_KEY` turns on bill reading
+- `GEMINI_API_KEY` turns on bill scanning
 - `TOYYIBPAY_SECRET_KEY` and `TOYYIBPAY_CATEGORY_CODE` turn on online payment (sandbox by default)
 
 Checks: `composer ci:check`
