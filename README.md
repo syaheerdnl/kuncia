@@ -8,8 +8,8 @@ I built it for my family's rentals (houses, rooms and a two-floor shop), and it 
 
 ![Dashboard](docs/screenshots/dashboard.webp)
 
-| Invoices | Utility bill split |
-|---|---|
+| Invoices                                   | Utility bill split                              |
+| ------------------------------------------ | ----------------------------------------------- |
 | ![Invoices](docs/screenshots/invoice.webp) | ![Utility split](docs/screenshots/utility.webp) |
 
 ## What it does
@@ -17,6 +17,7 @@ I built it for my family's rentals (houses, rooms and a two-floor shop), and it 
 Three roles: **landlord**, **tenant** and **maintenance staff**.
 
 **Landlord**
+
 - Properties: house, apartment, room, hostel or shop, each with its own units
 - Tenancies with rent, deposit and start/end dates
 - Invoices made automatically on the 1st of every month and marked overdue when unpaid
@@ -26,10 +27,12 @@ Three roles: **landlord**, **tenant** and **maintenance staff**.
 - Dashboard with occupancy, collected vs billed, overdue rent and leases ending soon
 
 **Tenant**
+
 - See their own invoices and payments
 - Report a repair with photos and follow its status
 
 **Maintenance staff**
+
 - A task list of the tickets assigned to them
 
 Online payment through ToyyibPay (FPX) is built and tested against the ToyyibPay sandbox. It isn't live yet.
@@ -60,6 +63,7 @@ composer dev                # app + Vite
 Demo accounts (password `password`): `landlord@kuncia.test`, `tenant@kuncia.test`, `tech@kuncia.test`
 
 Optional `.env` keys:
+
 - `GEMINI_API_KEY` turns on bill reading
 - `TOYYIBPAY_SECRET_KEY` and `TOYYIBPAY_CATEGORY_CODE` turn on online payment (sandbox by default)
 
