@@ -45,14 +45,14 @@ export function BilledCollectedChart({ data }: { data: Row[] }) {
                     <Bar
                         dataKey="billed"
                         name="Billed"
-                        fill="var(--viz-1)"
+                        fill="var(--viz-billed)"
                         radius={[4, 4, 0, 0]}
                         maxBarSize={28}
                     />
                     <Bar
                         dataKey="collected"
                         name="Collected"
-                        fill="var(--viz-2)"
+                        fill="var(--viz-collected)"
                         radius={[4, 4, 0, 0]}
                         maxBarSize={28}
                     />

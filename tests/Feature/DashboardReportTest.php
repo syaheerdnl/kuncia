@@ -34,6 +34,8 @@ test('landlord dashboard shows cards, trend, overdue and ending leases', functio
             ->where('cards.collected_month', fn ($v) => (float) $v === 200.0)
             ->where('cards.outstanding', fn ($v) => (float) $v === 300.0)
             ->where('cards.open_tickets', 1)
+            ->has('cards.overdue_count')
+            ->has('cards.high_tickets')
             ->has('trend', 6)
             ->where('trend.5.month', '2026-10')
             ->where('trend.4.collected', fn ($v) => (float) $v === 500.0)

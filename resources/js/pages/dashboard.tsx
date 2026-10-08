@@ -1,23 +1,29 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    AlertTriangle,
     CalendarClock,
+    CircleAlert,
     FileText,
     Home,
+    Plus,
+    Wallet,
     Wrench,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
 import MaintenanceController from '@/actions/App/Http/Controllers/MaintenanceController';
+import PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import TenantController from '@/actions/App/Http/Controllers/TenantController';
 import MyInvoiceController from '@/actions/App/Http/Controllers/Tenant/MyInvoiceController';
 import MyMaintenanceController from '@/actions/App/Http/Controllers/Tenant/MyMaintenanceController';
 import { BilledCollectedChart } from '@/components/charts/billed-collected-chart';
+import { InitialsAvatar } from '@/components/initials-avatar';
 import { InvoiceTable } from '@/components/invoices/invoice-table';
 import type { InvoiceRow } from '@/components/invoices/types';
 import { TicketTable } from '@/components/maintenance/ticket-table';
 import type { TicketRow } from '@/components/maintenance/types';
 import { Button } from '@/components/ui/button';
 import { formatRM } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 type LandlordProps = {
@@ -28,7 +34,9 @@ type LandlordProps = {
         occupancy: number;
         collected_month: number;
         outstanding: number;
+        overdue_count: number;
         open_tickets: number;
+        high_tickets: number;
     };
     trend: {
         month: string;
@@ -93,6 +101,107 @@ function Stat({
     );
 }
 
+const titles = new Set([
+    'encik',
+    'en',
+    'en.',
+    'puan',
+    'pn',
+    'pn.',
+    'cik',
+    'tuan',
+    'haji',
+    'hj',
+    'hj.',
+    'hajah',
+    'hjh',
+    'hjh.',
+    'dr',
+    'dr.',
+    'datuk',
+    "dato'",
+    'dato',
+    'datin',
+    'mr',
+    'mr.',
+    'mrs',
+    'mrs.',
+    'ms',
+    'ms.',
+]);
+
+/** First real name, skipping titles like Encik, Puan, Haji. */
+function firstName(full: string): string {
+    const words = full
+        .replace(/\(.*?\)/g, '')
+        .trim()
+        .split(/\s+/);
+
+    return words.find((w) => !titles.has(w.toLowerCase())) ?? words[0] ?? '';
+}
+
+function greeting(): string {
+    const h = new Date().getHours();
+
+    return h < 12 ? 'Good morning' : h < 19 ? 'Good afternoon' : 'Good evening';
+}
+
+/** Small ring for occupancy; the number sits beside it. */
+function Ring({ percent }: { percent: number }) {
+    const r = 15;
+    const c = 2 * Math.PI * r;
+
+    return (
+        <svg viewBox="0 0 36 36" className="size-14 shrink-0 -rotate-90">
+            <circle
+                cx="18"
+                cy="18"
+                r={r}
+                fill="none"
+                strokeWidth="4"
+                className="stroke-muted"
+            />
+            <circle
+                cx="18"
+                cy="18"
+                r={r}
+                fill="none"
+                strokeWidth="4"
+                strokeLinecap="round"
+                className="stroke-primary"
+                strokeDasharray={`${(Math.min(percent, 100) / 100) * c} ${c}`}
+            />
+        </svg>
+    );
+}
+
+function IconStat({
+    label,
+    value,
+    sub,
+    icon: Icon,
+    tone,
+}: {
+    label: string;
+    value: string | number;
+    sub?: string;
+    icon: LucideIcon;
+    tone: string;
+}) {
+    return (
+        <div className="rounded-2xl border bg-card p-5">
+            <div className="flex items-start justify-between gap-2">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <span className={cn('rounded-lg p-1.5', tone)}>
+                    <Icon className="size-4" />
+                </span>
+            </div>
+            <p className="mt-2 text-2xl font-bold tabular-nums">{value}</p>
+            {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
+        </div>
+    );
+}
+
 function LandlordDashboard({
     cards,
     trend,
@@ -100,124 +209,184 @@ function LandlordDashboard({
     endingLeases,
     tickets,
 }: LandlordProps) {
+    const { auth } = usePage().props;
+    const name = firstName(auth.user.name);
+    const billedNow = trend.at(-1)?.billed ?? 0;
+    const collectedPct = billedNow
+        ? Math.round((cards.collected_month / billedNow) * 100)
+        : 0;
+    const today = new Date().toLocaleDateString('en-MY', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+    });
+
     return (
-        <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <Stat
-                    label="Occupancy"
-                    value={`${cards.occupancy}%`}
-                    sub={`${cards.occupied} of ${cards.units} units`}
-                />
-                <Stat
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <p className="text-sm text-muted-foreground">{today}</p>
+                    <h1 className="mt-0.5 text-2xl font-bold tracking-tight">
+                        {greeting()}, {name}
+                    </h1>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" asChild>
+                        <Link href={PropertyController.index()}>
+                            <Plus /> Add bill
+                        </Link>
+                    </Button>
+                    <Button asChild>
+                        <Link href={InvoiceController.index()}>
+                            <Wallet /> Record payment
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="flex items-center gap-4 rounded-2xl border bg-card p-5">
+                    <Ring percent={cards.occupancy} />
+                    <div>
+                        <p className="text-xs text-muted-foreground">
+                            Occupancy
+                        </p>
+                        <p className="text-2xl font-bold">{cards.occupancy}%</p>
+                        <p className="text-xs text-muted-foreground">
+                            {cards.occupied} of {cards.units} units
+                        </p>
+                    </div>
+                </div>
+                <IconStat
                     label="Collected this month"
                     value={formatRM(cards.collected_month)}
+                    sub={
+                        billedNow
+                            ? `of ${formatRM(billedNow)} billed · ${collectedPct}%`
+                            : 'nothing billed yet'
+                    }
+                    icon={Wallet}
+                    tone="bg-brand-soft text-brand-strong"
                 />
-                <Stat
+                <IconStat
                     label="Outstanding"
                     value={formatRM(cards.outstanding)}
-                    sub="unpaid + overdue"
+                    sub={`${cards.overdue_count} overdue invoice${cards.overdue_count === 1 ? '' : 's'}`}
+                    icon={CircleAlert}
+                    tone="bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300"
                 />
-                <Stat
+                <IconStat
                     label="Open tickets"
                     value={cards.open_tickets}
-                    sub="open + in progress"
+                    sub={`${cards.high_tickets} high priority`}
+                    icon={Wrench}
+                    tone="bg-sky-50 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300"
                 />
             </div>
 
-            <div className="rounded-xl border p-4">
-                <h2 className="font-semibold">Billed vs collected</h2>
-                <p className="mb-3 text-xs text-muted-foreground">
-                    Last 6 months · billed by invoice month, collected by
-                    payment date
-                </p>
-                <BilledCollectedChart data={trend} />
-            </div>
+            <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+                <div className="rounded-2xl border bg-card p-5">
+                    <h2 className="font-semibold">Billed vs collected</h2>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                        Last 6 months · billed by invoice month, collected by
+                        payment date
+                    </p>
+                    <BilledCollectedChart data={trend} />
+                </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-xl border">
-                    <h2 className="flex items-center gap-2 border-b p-4 font-semibold">
-                        <AlertTriangle className="size-4 text-red-600" />{' '}
-                        Overdue invoices
-                    </h2>
+                <div className="flex flex-col rounded-2xl border bg-card">
+                    <div className="flex items-center justify-between border-b p-5">
+                        <h2 className="font-semibold">Overdue</h2>
+                        <Link
+                            href={InvoiceController.index()}
+                            className="text-xs font-medium text-brand-strong hover:underline"
+                        >
+                            View all
+                        </Link>
+                    </div>
                     {overdue.length === 0 ? (
-                        <p className="p-4 text-sm text-muted-foreground">
+                        <p className="p-5 text-sm text-muted-foreground">
                             Nothing overdue.
                         </p>
                     ) : (
-                        <ul className="divide-y text-sm">
+                        <ul className="divide-y">
                             {overdue.map((o) => (
-                                <li
-                                    key={o.id}
-                                    className="flex items-center justify-between gap-2 px-4 py-2"
-                                >
+                                <li key={o.id}>
                                     <Link
                                         href={InvoiceController.show(o.id)}
-                                        className="hover:underline"
+                                        className="flex items-center gap-3 px-5 py-3 hover:bg-muted/50"
                                     >
-                                        <span className="font-medium">
-                                            {o.tenant}
-                                        </span>{' '}
-                                        <span className="text-muted-foreground">
-                                            · {o.unit} · {o.days} days late
+                                        <InitialsAvatar name={o.tenant} />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium">
+                                                {o.tenant}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {o.unit} · {o.days} days late
+                                            </p>
+                                        </div>
+                                        <span className="text-sm font-semibold tabular-nums">
+                                            {formatRM(o.total)}
                                         </span>
                                     </Link>
-                                    <span className="font-medium tabular-nums">
-                                        {formatRM(o.total)}
-                                    </span>
                                 </li>
                             ))}
                         </ul>
                     )}
-                </div>
 
-                <div className="rounded-xl border">
-                    <h2 className="flex items-center gap-2 border-b p-4 font-semibold">
-                        <CalendarClock className="size-4" /> Leases ending in 60
-                        days
-                    </h2>
-                    {endingLeases.length === 0 ? (
-                        <p className="p-4 text-sm text-muted-foreground">
-                            No leases ending soon.
+                    <div className="mt-auto border-t p-5">
+                        <p className="flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-muted-foreground uppercase">
+                            <CalendarClock className="size-3.5" /> Leases ending
+                            in 60 days
                         </p>
-                    ) : (
-                        <ul className="divide-y text-sm">
-                            {endingLeases.map((l) => (
-                                <li
-                                    key={l.id}
-                                    className="flex items-center justify-between px-4 py-2"
-                                >
-                                    <Link
-                                        href={TenantController.show(
-                                            l.tenant_id,
-                                        )}
-                                        className="hover:underline"
-                                    >
-                                        <span className="font-medium">
-                                            {l.tenant}
-                                        </span>{' '}
-                                        <span className="text-muted-foreground">
-                                            · {l.unit}
-                                        </span>
-                                    </Link>
-                                    <span>{l.end_date}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                        {endingLeases.length === 0 ? (
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                None coming up.
+                            </p>
+                        ) : (
+                            <ul className="mt-3 space-y-3">
+                                {endingLeases.map((l) => (
+                                    <li key={l.id}>
+                                        <Link
+                                            href={TenantController.show(
+                                                l.tenant_id,
+                                            )}
+                                            className="flex items-center gap-3"
+                                        >
+                                            <InitialsAvatar name={l.tenant} />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-medium hover:underline">
+                                                    {l.tenant}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {l.unit}
+                                                </p>
+                                            </div>
+                                            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                                {l.end_date}
+                                            </span>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-3">
-                <div className="flex items-center justify-between">
+            <div className="rounded-2xl border bg-card">
+                <div className="flex items-center justify-between p-5">
                     <h2 className="font-semibold">Open maintenance</h2>
                     <Link
                         href={MaintenanceController.index()}
-                        className="text-sm text-muted-foreground hover:underline"
+                        className="text-xs font-medium text-brand-strong hover:underline"
                     >
                         View all
                     </Link>
                 </div>
-                <TicketTable tickets={tickets} empty="No open tickets." />
+                <div className="[&>div]:rounded-none [&>div]:border-x-0 [&>div]:border-b-0">
+                    <TicketTable tickets={tickets} empty="No open tickets." />
+                </div>
             </div>
         </div>
     );

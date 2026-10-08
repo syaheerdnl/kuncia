@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Wrench } from 'lucide-react';
 import MaintenanceController from '@/actions/App/Http/Controllers/MaintenanceController';
 import type { TicketRow } from '@/components/maintenance/types';
+import { InitialsAvatar } from '@/components/initials-avatar';
 import { StatusBadge } from '@/components/status-badge';
 
 type Props = {
@@ -67,7 +68,15 @@ export function TicketTable({
                                 {t.unit}
                             </td>
                             {showTenant && (
-                                <td className="px-4 py-3">{t.tenant}</td>
+                                <td className="px-4 py-3">
+                                    <span className="flex items-center gap-2">
+                                        <InitialsAvatar
+                                            name={t.tenant}
+                                            className="size-7 text-[0.65rem]"
+                                        />
+                                        {t.tenant}
+                                    </span>
+                                </td>
                             )}
                             {showAssignee && (
                                 <td className="px-4 py-3">

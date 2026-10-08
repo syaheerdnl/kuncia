@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\MaintenancePriority;
 use App\Enums\MaintenanceStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\TenancyStatus;
@@ -28,7 +29,7 @@ class LandlordStats
             ->whereHas('invoice', fn ($q) => $q->forLandlord($this->landlord));
     }
 
-    /** @return array{units: int, occupied: int, occupancy: int, collected_month: float, outstanding: float, open_tickets: int} */
+    /** @return array{units: int, occupied: int, occupancy: int, collected_month: float, outstanding: float, overdue_count: int, open_tickets: int, high_tickets: int} */
     public function cards(CarbonImmutable $today): array
     {
         $units = Unit::whereHas('property', fn ($q) => $q->where('owner_id', $this->landlord->id));
@@ -41,6 +42,9 @@ class LandlordStats
             ->whereIn('invoice_id', (clone $open)->select('id'))
             ->sum('amount');
 
+        $openTickets = MaintenanceRequest::forLandlord($this->landlord)
+            ->whereIn('status', [MaintenanceStatus::Open, MaintenanceStatus::InProgress]);
+
         return [
             'units' => $total,
             'occupied' => $occupied,
@@ -49,9 +53,9 @@ class LandlordStats
                 ->whereBetween('paid_at', [$today->startOfMonth(), $today->endOfMonth()])
                 ->sum('amount'), 2),
             'outstanding' => round($billedOpen - $paidOnOpen, 2),
-            'open_tickets' => MaintenanceRequest::forLandlord($this->landlord)
-                ->whereIn('status', [MaintenanceStatus::Open, MaintenanceStatus::InProgress])
-                ->count(),
+            'overdue_count' => (clone $open)->where('status', InvoiceStatus::Overdue)->count(),
+            'open_tickets' => (clone $openTickets)->count(),
+            'high_tickets' => (clone $openTickets)->where('priority', MaintenancePriority::High)->count(),
         ];
     }
 

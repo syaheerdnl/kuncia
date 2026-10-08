@@ -24,9 +24,11 @@ export default function Login({ status, canResetPassword }: Props) {
             <Head title="Log in" />
 
             {guestLogin && (
-                <div className="mb-2 rounded-lg border border-dashed p-3 text-center text-sm">
-                    <p className="font-medium">Just looking around?</p>
-                    <p className="text-muted-foreground">
+                <div className="rounded-xl border border-dashed border-teal-300 bg-brand-soft p-4 text-sm dark:border-teal-800">
+                    <p className="font-semibold text-brand-strong">
+                        Just looking around?
+                    </p>
+                    <p className="mt-1 text-brand-strong/90">
                         Try the guest account:{' '}
                         <span className="font-mono">{guestLogin.email}</span> /{' '}
                         <span className="font-mono">{guestLogin.password}</span>
@@ -127,6 +129,6 @@ export default function Login({ status, canResetPassword }: Props) {
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    title: 'Welcome back',
+    description: 'Log in to your account',
 };

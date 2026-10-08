@@ -38,11 +38,12 @@ export function StatusBadge({
     return (
         <span
             className={cn(
-                'rounded-md px-2 py-0.5 text-xs font-medium capitalize',
+                'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap capitalize',
                 styles[status] ?? 'bg-muted',
                 className,
             )}
         >
+            <span className="size-1.5 rounded-full bg-current opacity-80" />
             {status.replace('_', ' ')}
         </span>
     );
