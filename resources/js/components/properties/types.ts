@@ -12,6 +12,22 @@ export type PropertyFormData = {
     cover_url: string | null;
 };
 
+/** How one month of a tenancy's rent stands (see RentCalendar.php). */
+export type RentMonth = {
+    month: string; // "2026-10"
+    label: string; // "October 2026"
+    status: 'paid' | 'unpaid' | 'overdue' | 'void' | 'missing';
+    invoice_id: number | null;
+};
+
+export type RentTenancy = {
+    id: number;
+    label: string; // "Tenant · Unit"
+    rent: string;
+    months: RentMonth[];
+    missing: { month: string; label: string }[];
+};
+
 /** A tenancy a deposit or payout can be recorded against (label is "Tenant · Unit"). */
 export type TenancyOption = { id: number; label: string };
 
