@@ -35,6 +35,33 @@ test('generate command bills every active tenancy once', function () {
         ->and($invoice->items)->toHaveCount(1);
 });
 
+test('a clash on the invoice number is retried with a fresh number', function () {
+    $period = CarbonImmutable::parse('2026-10-01');
+    $first = $this->service->generateFor($this->tenancy, $period);
+    expect($first->invoice_no)->toBe('INV-202610-0001');
+
+    // Simulate a competing run: the first attempt grabs the number already taken.
+    $clashed = false;
+    Invoice::creating(function (Invoice $invoice) use (&$clashed, $first) {
+        if (! $clashed) {
+            $clashed = true;
+            $invoice->invoice_no = $first->invoice_no;
+        }
+    });
+
+    $other = Tenancy::factory()->create([
+        'start_date' => '2026-09-01',
+        'end_date' => '2027-08-31',
+        'monthly_rent' => 300,
+    ]);
+    $second = $this->service->generateFor($other, $period);
+
+    expect($clashed)->toBeTrue()
+        ->and($second)->not->toBeNull()
+        ->and($second->invoice_no)->toBe('INV-202610-0002')
+        ->and(Invoice::count())->toBe(2);
+});
+
 test('no invoice outside the tenancy dates', function () {
     expect($this->service->generateFor($this->tenancy, CarbonImmutable::parse('2026-08-01')))->toBeNull()
         ->and($this->service->generateFor($this->tenancy, CarbonImmutable::parse('2027-09-01')))->toBeNull();

@@ -11,6 +11,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TenancyController;
 use App\Http\Controllers\Tenant\MyInvoiceController;
 use App\Http\Controllers\Tenant\MyMaintenanceController;
+use App\Http\Controllers\Tenant\MyUnitController;
 use App\Http\Controllers\Tenant\OnlinePaymentController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UnitController;
@@ -65,7 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Tenant area
     Route::middleware('role:tenant')->prefix('my')->name('my.')->group(function () {
-        Route::inertia('unit', 'coming-soon', ['title' => 'My Unit'])->name('unit');
+        Route::get('unit', MyUnitController::class)->name('unit');
         Route::get('invoices', [MyInvoiceController::class, 'index'])->name('invoices');
         Route::get('invoices/{invoice}', [MyInvoiceController::class, 'show'])->name('invoices.show');
         Route::post('invoices/{invoice}/pay', [OnlinePaymentController::class, 'pay'])->name('invoices.pay');

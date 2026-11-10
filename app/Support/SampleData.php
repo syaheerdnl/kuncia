@@ -182,7 +182,7 @@ class SampleData
         $invoice->items()->create(['description' => 'Utilities (water & electric)', 'amount' => $utilities]);
 
         if ($status === InvoiceStatus::Overdue) {
-            $invoice->items()->create(['description' => 'Late payment fee', 'amount' => config('sewahub.late_fee', 20)]);
+            $invoice->items()->create(['description' => 'Late payment fee', 'amount' => config('kuncia.late_fee', 20)]);
         }
 
         $invoice->recalculateTotal();

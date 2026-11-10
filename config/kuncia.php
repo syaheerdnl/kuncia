@@ -1,6 +1,10 @@
 <?php
 
 return [
+    // Flat fee added once when an invoice becomes overdue (RM).
+    // KUNCIA_LATE_FEE is the new name; SEWAHUB_LATE_FEE still works so an existing server .env keeps its value.
+    'late_fee' => (float) env('KUNCIA_LATE_FEE', env('SEWAHUB_LATE_FEE', 20)),
+
     // Public sign-up. On the family server this is false: accounts are created with `php artisan kuncia:create-landlord`.
     'registration' => (bool) env('KUNCIA_REGISTRATION', true),
 

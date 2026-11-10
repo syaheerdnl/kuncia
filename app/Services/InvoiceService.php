@@ -11,11 +11,15 @@ use App\Models\Tenancy;
 use App\Services\Utilities\UtilityBillService;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class InvoiceService
 {
+    /** How many times to retry when two runs pick the same invoice number. */
+    private const NUMBER_RETRIES = 3;
+
     public function __construct(private readonly UtilityBillService $utilities) {}
 
     /**
@@ -30,10 +34,27 @@ class InvoiceService
         $covers = $tenancy->start_date->lte($end)
             && ($tenancy->end_date === null || $tenancy->end_date->gte($start));
 
-        if (! $covers || $tenancy->invoices()->whereDate('period', $start)->exists()) {
-            return null;
-        }
+        // nextNumber() reads "max + 1" without a lock, so two runs at once can pick
+        // the same number and the unique index rejects the loser. Each attempt
+        // re-checks first, then retries with a fresh number. If the clash was a
+        // duplicate invoice for this period instead, the re-check returns null.
+        for ($attempt = 1; ; $attempt++) {
+            if (! $covers || $tenancy->invoices()->whereDate('period', $start)->exists()) {
+                return null;
+            }
 
+            try {
+                return $this->createInvoice($tenancy, $start);
+            } catch (UniqueConstraintViolationException $e) {
+                if ($attempt >= self::NUMBER_RETRIES) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    private function createInvoice(Tenancy $tenancy, CarbonImmutable $start): Invoice
+    {
         return DB::transaction(function () use ($tenancy, $start) {
             $invoice = $tenancy->invoices()->create([
                 'invoice_no' => Invoice::nextNumber($start),
@@ -72,7 +93,7 @@ class InvoiceService
     public function markOverdue(CarbonInterface $today): int
     {
         $count = 0;
-        $fee = (float) config('sewahub.late_fee', 20);
+        $fee = (float) config('kuncia.late_fee', 20);
 
         Invoice::where('status', InvoiceStatus::Unpaid)
             ->whereDate('due_date', '<', $today->toDateString())
