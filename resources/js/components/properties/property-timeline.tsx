@@ -1,5 +1,5 @@
-import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowUp, ChevronDown } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { RecordTransactionDialog } from '@/components/properties/record-transaction-dialog';
 import { EventCard } from '@/components/properties/timeline-event-card';
 import {
@@ -149,6 +149,17 @@ export function PropertyTimeline({
     const [monthCount, setMonthCount] = useState(FIRST_MONTHS);
     const [openKey, setOpenKey] = useState<string | null>(null);
 
+    // Takes you back to the top of this card, without animation if the person asked for less motion.
+    const cardRef = useRef<HTMLDivElement>(null);
+    const toTop = () =>
+        cardRef.current?.scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
+                .matches
+                ? 'auto'
+                : 'smooth',
+            block: 'start',
+        });
+
     const items: Item[] = events.map((event, i) => ({ event, key: String(i) }));
     const shown = items.filter(({ event }) => !hidden[KINDS[event.type].group]);
     const allMonths = groupByMonth(shown);
@@ -162,7 +173,7 @@ export function PropertyTimeline({
         events.filter((e) => KINDS[e.type].group === group).length;
 
     return (
-        <div className="rounded-xl border">
+        <div ref={cardRef} className="scroll-mt-4 rounded-xl border">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
                 <div>
                     <h2 className="font-semibold">Payment timeline</h2>
@@ -299,24 +310,60 @@ export function PropertyTimeline({
                         );
                     })}
 
-                    {olderMonths > 0 && (
+                    {(olderMonths > 0 || months.length > FIRST_MONTHS) && (
                         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+                            {olderMonths > 0 && (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            setMonthCount(
+                                                (n) => n + MORE_MONTHS,
+                                            )
+                                        }
+                                    >
+                                        Show older months ({olderMonths} more)
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setMonthCount(allMonths.length)
+                                        }
+                                        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                                    >
+                                        Show all
+                                    </button>
+                                </>
+                            )}
+                            {months.length > FIRST_MONTHS && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setMonthCount(FIRST_MONTHS);
+                                        toTop();
+                                    }}
+                                    className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                                >
+                                    Show only the latest {FIRST_MONTHS} months
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Floats at the bottom of the screen while a long list is on screen. */}
+                    {months.length > FIRST_MONTHS && (
+                        <div className="pointer-events-none sticky bottom-4 flex justify-end">
                             <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                    setMonthCount((n) => n + MORE_MONTHS)
-                                }
-                            >
-                                Show older months ({olderMonths} more)
-                            </Button>
-                            <button
                                 type="button"
-                                onClick={() => setMonthCount(allMonths.length)}
-                                className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                                size="sm"
+                                variant="secondary"
+                                onClick={toTop}
+                                aria-label="Back to the top of the timeline"
+                                className="pointer-events-auto shadow-md"
                             >
-                                Show all
-                            </button>
+                                <ArrowUp /> Back to top
+                            </Button>
                         </div>
                     )}
                 </div>
