@@ -12,20 +12,35 @@ export type PropertyFormData = {
     cover_url: string | null;
 };
 
-/** One month of a property's money history (see PropertyTimeline.php). */
-export type TimelineRow = {
-    month: string;
-    label: string;
-    rent: number;
-    utilities: number;
-    late_fee: number;
-    other: number;
-    billed: number;
-    collected: number;
-    paid: number;
-    unpaid: number;
-    overdue: number;
-};
+/** One thing that happened at a property (see PropertyTimeline.php). Dates are Y-m-d. */
+export type TimelineEvent =
+    | {
+          type: 'payment';
+          date: string;
+          amount: string;
+          method: string;
+          reference: string | null;
+          period: string;
+          tenant: string;
+          unit: string;
+      }
+    | {
+          type: 'tenancy_start';
+          date: string;
+          amount: string;
+          deposit: string;
+          tenant: string;
+          unit: string;
+      }
+    | {
+          type: 'tenancy_end';
+          date: string;
+          amount: string;
+          deposit: string;
+          deposit_status: string;
+          tenant: string;
+          unit: string;
+      };
 
 export type UnitRow = {
     id: number;
