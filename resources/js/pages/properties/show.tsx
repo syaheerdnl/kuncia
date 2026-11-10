@@ -7,6 +7,7 @@ import { PropertyTimeline } from '@/components/properties/property-timeline';
 import type {
     Option,
     PropertyFormData,
+    TenancyOption,
     TimelineEvent,
     UnitRow,
 } from '@/components/properties/types';
@@ -22,6 +23,7 @@ type Props = {
     property: PropertyFormData & { type_label: string };
     units: UnitRow[];
     timeline: TimelineEvent[];
+    transactionTenancies: TenancyOption[];
     unitTypes: Option[];
     meters: Meter[];
     utilityTypes: Option[];
@@ -41,6 +43,7 @@ export default function PropertiesShow({
     property,
     units,
     timeline,
+    transactionTenancies,
     unitTypes,
     meters,
     utilityTypes,
@@ -252,7 +255,11 @@ export default function PropertiesShow({
                     )}
                 </div>
 
-                <PropertyTimeline events={timeline} />
+                <PropertyTimeline
+                    events={timeline}
+                    propertyId={property.id}
+                    tenancies={transactionTenancies}
+                />
 
                 <MetersSection
                     propertyId={property.id}
