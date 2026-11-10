@@ -15,11 +15,13 @@ import type {
     TenancyOption,
     TimelineEvent,
 } from '@/components/properties/types';
+import { Button } from '@/components/ui/button';
 import { formatRM } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-/** The newest months start open; older ones start folded so a long history stays easy to scan. */
-const OPEN_MONTHS = 2;
+/** Only the latest few months show at first; older ones load a few at a time, so a long history stays short. */
+const FIRST_MONTHS = 3;
+const MORE_MONTHS = 3;
 
 type Item = { event: TimelineEvent; key: string };
 type Day = { date: string; items: Item[] };
@@ -141,17 +143,20 @@ export function PropertyTimeline({
     tenancies: TenancyOption[];
 }) {
     const [hidden, setHidden] = useState<Partial<Record<Group, boolean>>>({});
-    // Months the person opened or folded by hand; the rest follow the default.
+    // Months the person folded by hand; the rest are open.
     const [folded, setFolded] = useState<Record<string, boolean>>({});
+    // How many months to show, newest first.
+    const [monthCount, setMonthCount] = useState(FIRST_MONTHS);
     const [openKey, setOpenKey] = useState<string | null>(null);
 
     const items: Item[] = events.map((event, i) => ({ event, key: String(i) }));
     const shown = items.filter(({ event }) => !hidden[KINDS[event.type].group]);
-    const months = groupByMonth(shown);
+    const allMonths = groupByMonth(shown);
+    const months = allMonths.slice(0, monthCount);
+    const olderMonths = allMonths.length - months.length;
 
-    const isFolded = (month: string, index: number) =>
-        folded[month] ?? index >= OPEN_MONTHS;
-    const anyFolded = months.some((m, i) => isFolded(m.month, i));
+    const isFolded = (month: string) => folded[month] ?? false;
+    const anyFolded = months.some((m) => isFolded(m.month));
 
     const count = (group: Group) =>
         events.filter((e) => KINDS[e.type].group === group).length;
@@ -234,8 +239,8 @@ export function PropertyTimeline({
                         </p>
                     )}
 
-                    {months.map((month, mi) => {
-                        const folded = isFolded(month.month, mi);
+                    {months.map((month) => {
+                        const folded = isFolded(month.month);
                         const sum = totals(
                             events.filter(
                                 (e) => monthKey(e.date) === month.month,
@@ -293,6 +298,27 @@ export function PropertyTimeline({
                             </section>
                         );
                     })}
+
+                    {olderMonths > 0 && (
+                        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setMonthCount((n) => n + MORE_MONTHS)
+                                }
+                            >
+                                Show older months ({olderMonths} more)
+                            </Button>
+                            <button
+                                type="button"
+                                onClick={() => setMonthCount(allMonths.length)}
+                                className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                            >
+                                Show all
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
