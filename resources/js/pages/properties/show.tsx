@@ -2,10 +2,12 @@ import { Head, Link, router } from '@inertiajs/react';
 import { DoorOpen, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import PropertyController from '@/actions/App/Http/Controllers/PropertyController';
 import UnitController from '@/actions/App/Http/Controllers/UnitController';
+import { PropertyTimelineChart } from '@/components/charts/property-timeline-chart';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import type {
     Option,
     PropertyFormData,
+    TimelineRow,
     UnitRow,
 } from '@/components/properties/types';
 import { UnitDialog } from '@/components/properties/unit-dialog';
@@ -19,6 +21,7 @@ import { cn } from '@/lib/utils';
 type Props = {
     property: PropertyFormData & { type_label: string };
     units: UnitRow[];
+    timeline: TimelineRow[];
     unitTypes: Option[];
     meters: Meter[];
     utilityTypes: Option[];
@@ -37,6 +40,7 @@ const statusStyle: Record<UnitRow['status'], string> = {
 export default function PropertiesShow({
     property,
     units,
+    timeline,
     unitTypes,
     meters,
     utilityTypes,
@@ -247,6 +251,8 @@ export default function PropertiesShow({
                         </div>
                     )}
                 </div>
+
+                <PropertyTimelineChart rows={timeline} />
 
                 <MetersSection
                     propertyId={property.id}

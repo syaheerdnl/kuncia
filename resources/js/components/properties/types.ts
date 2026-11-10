@@ -12,6 +12,21 @@ export type PropertyFormData = {
     cover_url: string | null;
 };
 
+/** One month of a property's money history (see PropertyTimeline.php). */
+export type TimelineRow = {
+    month: string;
+    label: string;
+    rent: number;
+    utilities: number;
+    late_fee: number;
+    other: number;
+    billed: number;
+    collected: number;
+    paid: number;
+    unpaid: number;
+    overdue: number;
+};
+
 export type UnitRow = {
     id: number;
     code: string;
