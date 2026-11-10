@@ -4,9 +4,11 @@ import PropertyController from '@/actions/App/Http/Controllers/PropertyControlle
 import UnitController from '@/actions/App/Http/Controllers/UnitController';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PropertyTimeline } from '@/components/properties/property-timeline';
+import { RentCalendar } from '@/components/properties/rent-calendar';
 import type {
     Option,
     PropertyFormData,
+    RentTenancy,
     TenancyOption,
     TimelineEvent,
     UnitRow,
@@ -22,6 +24,7 @@ import { cn } from '@/lib/utils';
 type Props = {
     property: PropertyFormData & { type_label: string };
     units: UnitRow[];
+    rentCalendar: RentTenancy[];
     timeline: TimelineEvent[];
     transactionTenancies: TenancyOption[];
     unitTypes: Option[];
@@ -42,6 +45,7 @@ const statusStyle: Record<UnitRow['status'], string> = {
 export default function PropertiesShow({
     property,
     units,
+    rentCalendar,
     timeline,
     transactionTenancies,
     unitTypes,
@@ -125,6 +129,11 @@ export default function PropertiesShow({
                         </div>
                     ))}
                 </div>
+
+                <RentCalendar
+                    propertyId={property.id}
+                    tenancies={rentCalendar}
+                />
 
                 <div className="rounded-xl border">
                     <div className="flex items-center justify-between border-b p-4">

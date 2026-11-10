@@ -76,6 +76,43 @@ class InvoiceService
         });
     }
 
+    /**
+     * Create the invoice for a month that was missed, with no late fee, and optionally
+     * record the payment for it in the same step. Nothing is saved if either part fails.
+     *
+     * @param  array{amount: float, method: PaymentMethod, reference: string|null, paid_at: CarbonInterface}|null  $payment
+     *
+     * @throws ValidationException when the month already has an invoice, is outside the tenancy, or the payment is more than is owed
+     */
+    public function createMissedMonth(Tenancy $tenancy, CarbonInterface $month, ?array $payment = null): Invoice
+    {
+        $start = CarbonImmutable::parse($month)->startOfMonth();
+
+        if ($tenancy->invoices()->whereDate('period', $start)->exists()) {
+            throw ValidationException::withMessages(['month' => $start->format('F Y').' already has an invoice.']);
+        }
+
+        return DB::transaction(function () use ($tenancy, $start, $payment) {
+            $invoice = $this->generateFor($tenancy, $start);
+
+            if (! $invoice) {
+                throw ValidationException::withMessages(['month' => $start->format('F Y').' is outside this tenancy.']);
+            }
+
+            $invoice->update(['late_fee_waived' => true]);
+
+            if ($payment) {
+                if ($payment['amount'] > $this->outstanding($invoice)) {
+                    throw ValidationException::withMessages(['amount' => 'Amount is more than the balance due.']);
+                }
+
+                $this->recordPayment($invoice, $payment['amount'], $payment['method'], $payment['reference'], $payment['paid_at']);
+            }
+
+            return $invoice->fresh() ?? $invoice;
+        });
+    }
+
     /** Invoice every active tenancy for the month. Returns how many were created. */
     public function generateMonth(CarbonInterface $period): int
     {
@@ -102,7 +139,7 @@ class InvoiceService
             ->each(function (Invoice $invoice) use ($fee, &$count) {
                 DB::transaction(function () use ($invoice, $fee) {
                     $invoice->update(['status' => InvoiceStatus::Overdue]);
-                    if ($fee > 0) {
+                    if ($fee > 0 && ! $invoice->late_fee_waived) {
                         $invoice->items()->create(['description' => InvoiceItem::LATE_FEE, 'amount' => $fee]);
                         $invoice->recalculateTotal();
                     }

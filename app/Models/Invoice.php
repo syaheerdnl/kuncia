@@ -25,8 +25,9 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property string $total
  * @property InvoiceStatus $status
  * @property CarbonImmutable|null $paid_at
+ * @property bool $late_fee_waived
  */
-#[Fillable(['tenancy_id', 'invoice_no', 'period', 'issue_date', 'due_date', 'total', 'status', 'paid_at'])]
+#[Fillable(['tenancy_id', 'invoice_no', 'period', 'issue_date', 'due_date', 'total', 'status', 'paid_at', 'late_fee_waived'])]
 class Invoice extends Model
 {
     /** @use HasFactory<InvoiceFactory> */
@@ -41,6 +42,7 @@ class Invoice extends Model
             'total' => 'decimal:2',
             'status' => InvoiceStatus::class,
             'paid_at' => 'datetime',
+            'late_fee_waived' => 'boolean',
         ];
     }
 
