@@ -4,6 +4,7 @@ namespace App\Services\Import;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\TransactionType;
 use App\Enums\UserRole;
 use App\Models\Invoice;
 use App\Models\Property;
@@ -113,7 +114,48 @@ class HistoryImporter
 
         $lines[] = "  {$paid} month(s) recorded as paid, {$skipped} already paid (skipped).";
 
+        if (! empty($row['transactions'])) {
+            $lines[] = $this->importTransactions($tenancy, $row['transactions']);
+        }
+
         return $lines;
+    }
+
+    /**
+     * Deposits received and money paid out. A row that already exists is skipped.
+     *
+     * @param  list<array<string, mixed>>  $transactions
+     */
+    private function importTransactions(Tenancy $tenancy, array $transactions): string
+    {
+        $added = 0;
+
+        foreach ($transactions as $tx) {
+            $type = TransactionType::from((string) $tx['type']);
+
+            // whereDate: a date column may be stored with a time part, so compare the day only.
+            $exists = $tenancy->transactions()
+                ->where('type', $type->value)
+                ->whereDate('occurred_on', (string) $tx['date'])
+                ->where('amount', $tx['amount'])
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            $tenancy->transactions()->create([
+                'type' => $type,
+                'amount' => $tx['amount'],
+                'occurred_on' => (string) $tx['date'],
+                'note' => $tx['note'] ?? null,
+            ]);
+            $added++;
+        }
+
+        $skipped = count($transactions) - $added;
+
+        return "  {$added} other transaction(s) added, {$skipped} already there (skipped).";
     }
 
     /** "Name [CODE1, CODE2]; Other [A]" so a wrong name or code is easy to fix. */
@@ -236,6 +278,11 @@ class HistoryImporter
             'tenancies.*.payments.*.extras' => ['nullable', 'array'],
             'tenancies.*.payments.*.extras.*.description' => ['required', 'string', 'max:120'],
             'tenancies.*.payments.*.extras.*.amount' => ['required', 'numeric'],
+            'tenancies.*.transactions' => ['nullable', 'array'],
+            'tenancies.*.transactions.*.type' => ['required', Rule::in(TransactionType::values())],
+            'tenancies.*.transactions.*.date' => ['required', 'date_format:Y-m-d'],
+            'tenancies.*.transactions.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'tenancies.*.transactions.*.note' => ['nullable', 'string', 'max:150'],
         ]);
 
         $validator->after(function ($v) use ($data) {

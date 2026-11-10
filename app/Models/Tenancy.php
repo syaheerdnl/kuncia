@@ -69,6 +69,12 @@ class Tenancy extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    /** @return HasMany<TenancyTransaction, $this> */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(TenancyTransaction::class);
+    }
+
     /** @return MorphMany<Attachment, $this> */
     public function attachments(): MorphMany
     {

@@ -12,18 +12,50 @@ export type PropertyFormData = {
     cover_url: string | null;
 };
 
+/** The invoice a payment was for, shown in the timeline popup. */
+export type TimelineInvoice = {
+    id: number;
+    invoice_no: string;
+    period: string;
+    status: string;
+    due_date: string;
+    total: string;
+    items: { description: string; amount: string }[];
+    payments: {
+        amount: string;
+        method: string;
+        paid_at: string;
+        reference: string | null;
+    }[];
+};
+
+export type PaymentEvent = {
+    type: 'payment';
+    date: string;
+    amount: string;
+    method: string;
+    reference: string | null;
+    period: string;
+    tenant: string;
+    unit: string;
+    invoice: TimelineInvoice;
+};
+
+/** Money that is not rent: a deposit received, or money paid out to the tenant. */
+type TransactionEvent<T extends 'deposit_received' | 'paid_to_tenant'> = {
+    type: T;
+    date: string;
+    amount: string;
+    note: string | null;
+    tenant: string;
+    unit: string;
+};
+
 /** One thing that happened at a property (see PropertyTimeline.php). Dates are Y-m-d. */
 export type TimelineEvent =
-    | {
-          type: 'payment';
-          date: string;
-          amount: string;
-          method: string;
-          reference: string | null;
-          period: string;
-          tenant: string;
-          unit: string;
-      }
+    | PaymentEvent
+    | TransactionEvent<'deposit_received'>
+    | TransactionEvent<'paid_to_tenant'>
     | {
           type: 'tenancy_start';
           date: string;

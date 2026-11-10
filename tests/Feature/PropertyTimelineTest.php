@@ -4,8 +4,10 @@ use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\TenancyStatus;
+use App\Enums\TransactionType;
 use App\Models\Property;
 use App\Models\Tenancy;
+use App\Models\TenancyTransaction;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\InvoiceService;
@@ -48,6 +50,67 @@ test('events run newest first: payments, then the move-in', function () {
         ])
         ->and($events[1])->toMatchArray(['method' => 'Transfer', 'reference' => 'DuitNow 1', 'period' => 'Jul 2026'])
         ->and($events[2])->toMatchArray(['amount' => '400.00', 'deposit' => '800.00', 'tenant' => $tenancy->tenant->name]);
+});
+
+test('a payment carries its invoice for the popup: lines, total and every payment on it', function () {
+    $tenancy = ($this->rent)('2026-08-01');
+    $invoice = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
+    $invoice->items()->create(['description' => 'Indah Water', 'amount' => 50]);
+    $invoice->recalculateTotal();
+
+    $this->invoices->recordPayment($invoice, 200, PaymentMethod::Cash, 'part 1', CarbonImmutable::parse('2026-08-05'));
+    $this->invoices->recordPayment($invoice->fresh(), 250, PaymentMethod::Transfer, null, CarbonImmutable::parse('2026-08-20'));
+    // A payment that never went through must not show up as money received.
+    $invoice->payments()->create(['amount' => 9, 'method' => PaymentMethod::ToyyibPay, 'status' => PaymentStatus::Failed]);
+
+    $events = $this->timeline->for($this->property);
+    $popup = $events[0]['invoice'];
+
+    expect($events[0]['type'])->toBe('payment')
+        ->and($popup)->toMatchArray([
+            'id' => $invoice->id,
+            'invoice_no' => $invoice->invoice_no,
+            'period' => 'August 2026',
+            'status' => 'paid',
+            'due_date' => '2026-08-05',
+            'total' => '450.00',
+        ])
+        ->and(array_column($popup['items'], 'description'))->toBe(['Monthly rent - August 2026', 'Indah Water'])
+        ->and(array_column($popup['payments'], 'amount'))->toBe(['200.00', '250.00'])
+        // Both payments point at the same invoice.
+        ->and($events[1]['invoice']['id'])->toBe($invoice->id);
+});
+
+test('deposits received and money paid to the tenant sit on the timeline', function () {
+    $tenancy = ($this->rent)('2026-07-01');
+
+    TenancyTransaction::create([
+        'tenancy_id' => $tenancy->id, 'type' => TransactionType::DepositReceived,
+        'amount' => 400, 'occurred_on' => '2026-06-18', 'note' => 'deposit',
+    ]);
+    TenancyTransaction::create([
+        'tenancy_id' => $tenancy->id, 'type' => TransactionType::PaidToTenant,
+        'amount' => 4500, 'occurred_on' => '2026-11-02', 'note' => 'roof repair',
+    ]);
+
+    $events = $this->timeline->for($this->property);
+
+    expect(array_column($events, 'type'))->toBe(['paid_to_tenant', 'tenancy_start', 'deposit_received'])
+        ->and($events[0])->toMatchArray([
+            'date' => '2026-11-02', 'amount' => '4500.00', 'note' => 'roof repair', 'tenant' => $tenancy->tenant->name,
+        ])
+        // The deposit came in before the tenant moved in.
+        ->and($events[2])->toMatchArray(['date' => '2026-06-18', 'amount' => '400.00', 'note' => 'deposit']);
+});
+
+test('other properties transactions are left out', function () {
+    $elsewhere = Tenancy::factory()->create(['start_date' => '2026-07-01', 'end_date' => null]);
+    TenancyTransaction::create([
+        'tenancy_id' => $elsewhere->id, 'type' => TransactionType::DepositReceived,
+        'amount' => 100, 'occurred_on' => '2026-06-18',
+    ]);
+
+    expect($this->timeline->for($this->property))->toBe([]);
 });
 
 test('a finished tenancy adds a move-out with the deposit outcome', function () {
