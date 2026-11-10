@@ -22,6 +22,17 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as invoices } from '@/routes/invoices';
+import { index as maintenance } from '@/routes/maintenance';
+import {
+    invoices as myInvoices,
+    maintenance as myMaintenance,
+    unit as myUnit,
+} from '@/routes/my';
+import { index as properties } from '@/routes/properties';
+import { index as reports } from '@/routes/reports';
+import { index as tasks } from '@/routes/tasks';
+import { index as tenants } from '@/routes/tenants';
 import type { NavItem, Role } from '@/types';
 
 const dashboardItem: NavItem = {
@@ -33,21 +44,21 @@ const dashboardItem: NavItem = {
 const navByRole: Record<Role, NavItem[]> = {
     landlord: [
         dashboardItem,
-        { title: 'Properties', href: '/properties', icon: Building2 },
-        { title: 'Tenants', href: '/tenants', icon: Users },
-        { title: 'Invoices', href: '/invoices', icon: FileText },
-        { title: 'Maintenance', href: '/maintenance', icon: Wrench },
-        { title: 'Reports', href: '/reports', icon: LineChart },
+        { title: 'Properties', href: properties(), icon: Building2 },
+        { title: 'Tenants', href: tenants(), icon: Users },
+        { title: 'Invoices', href: invoices(), icon: FileText },
+        { title: 'Maintenance', href: maintenance(), icon: Wrench },
+        { title: 'Reports', href: reports(), icon: LineChart },
     ],
     tenant: [
         dashboardItem,
-        { title: 'My Unit', href: '/my/unit', icon: Home },
-        { title: 'My Invoices', href: '/my/invoices', icon: FileText },
-        { title: 'My Requests', href: '/my/maintenance', icon: Wrench },
+        { title: 'My Unit', href: myUnit(), icon: Home },
+        { title: 'My Invoices', href: myInvoices(), icon: FileText },
+        { title: 'My Requests', href: myMaintenance(), icon: Wrench },
     ],
     maintenance: [
         dashboardItem,
-        { title: 'My Tasks', href: '/tasks', icon: ClipboardList },
+        { title: 'My Tasks', href: tasks(), icon: ClipboardList },
     ],
 };
 
