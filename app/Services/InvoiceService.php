@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Tenancy;
 use App\Services\Utilities\UtilityBillService;
@@ -65,7 +66,7 @@ class InvoiceService
             ]);
 
             $invoice->items()->create([
-                'description' => 'Monthly rent - '.$start->format('F Y'),
+                'description' => InvoiceItem::RENT_PREFIX.' - '.$start->format('F Y'),
                 'amount' => $tenancy->monthly_rent,
             ]);
             $invoice->recalculateTotal();
@@ -102,7 +103,7 @@ class InvoiceService
                 DB::transaction(function () use ($invoice, $fee) {
                     $invoice->update(['status' => InvoiceStatus::Overdue]);
                     if ($fee > 0) {
-                        $invoice->items()->create(['description' => 'Late payment fee', 'amount' => $fee]);
+                        $invoice->items()->create(['description' => InvoiceItem::LATE_FEE, 'amount' => $fee]);
                         $invoice->recalculateTotal();
                     }
                 });

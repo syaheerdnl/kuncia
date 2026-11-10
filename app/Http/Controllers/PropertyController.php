@@ -12,8 +12,10 @@ use App\Models\Property;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\Ai\GeminiBillReader;
+use App\Services\Reports\PropertyTimeline;
 use App\Support\MalaysianStates;
 use App\Support\MeterData;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -76,7 +78,7 @@ class PropertyController extends Controller
         return to_route('properties.show', $property);
     }
 
-    public function show(Request $request, Property $property, GeminiBillReader $reader): Response
+    public function show(Request $request, Property $property, GeminiBillReader $reader, PropertyTimeline $timeline): Response
     {
         Gate::authorize('view', $property);
 
@@ -98,6 +100,7 @@ class PropertyController extends Controller
                 'status' => $u->status->value,
                 'tenant' => $u->activeTenancy?->tenant->name,
             ]),
+            'timeline' => $timeline->for($property, CarbonImmutable::today()),
             'unitTypes' => UnitType::options(),
             'meters' => MeterData::forProperty($property),
             'utilityTypes' => UtilityType::options(),
