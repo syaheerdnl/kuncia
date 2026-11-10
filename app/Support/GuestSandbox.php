@@ -9,6 +9,7 @@ use App\Models\MaintenanceRequest;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\Tenancy;
+use App\Models\TenancyTransaction;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\UtilityBill;
@@ -80,6 +81,7 @@ class GuestSandbox
         Payment::whereIn('invoice_id', $invoiceIds)->delete();
         Invoice::whereIn('id', $invoiceIds)->delete(); // items cascade
         MaintenanceRequest::whereIn('id', $ticketIds)->delete();
+        TenancyTransaction::whereIn('tenancy_id', $tenancyIds)->delete(); // a guest can record deposits too
         Tenancy::whereIn('id', $tenancyIds)->delete();
         Unit::whereIn('id', $unitIds)->delete();
         Property::whereIn('id', $propertyIds)->delete();

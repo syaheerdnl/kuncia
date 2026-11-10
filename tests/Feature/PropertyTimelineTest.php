@@ -12,6 +12,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Services\InvoiceService;
 use App\Services\Reports\PropertyTimeline;
+use App\Services\Utilities\UtilityBillService;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -49,12 +50,16 @@ test('events run newest first: payments, then the move-in', function () {
             'tenant' => $tenancy->tenant->name,
         ])
         ->and($events[1])->toMatchArray(['method' => 'Transfer', 'reference' => 'DuitNow 1', 'period' => 'Jul 2026'])
-        ->and($events[2])->toMatchArray(['amount' => '400.00', 'deposit' => '800.00', 'tenant' => $tenancy->tenant->name]);
+        ->and($events[2])->toMatchArray([
+            'amount' => '400.00', 'deposit' => '800.00', 'tenant' => $tenancy->tenant->name,
+            'tenant_id' => $tenancy->tenant_id, // so the banner can link to the tenant's page
+        ]);
 });
 
 test('a payment carries its invoice for the popup: lines, total and every payment on it', function () {
     $tenancy = ($this->rent)('2026-08-01');
     $invoice = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
+    $this->travelTo('2026-08-03'); // the extra charge is added before the payments below
     $invoice->items()->create(['description' => 'Indah Water', 'amount' => 50]);
     $invoice->recalculateTotal();
 
@@ -79,6 +84,48 @@ test('a payment carries its invoice for the popup: lines, total and every paymen
         ->and(array_column($popup['payments'], 'amount'))->toBe(['200.00', '250.00'])
         // Both payments point at the same invoice.
         ->and($events[1]['invoice']['id'])->toBe($invoice->id);
+});
+
+test('late fees, utility bill shares and extra charges are events dated the day they were added', function () {
+    $this->travelTo('2026-08-01');
+    $tenancy = ($this->rent)('2026-08-01');
+    $invoice = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
+
+    $this->travelTo('2026-08-10');
+    $this->invoices->markOverdue(CarbonImmutable::today()); // adds the RM20 late fee
+
+    $this->travelTo('2026-08-12');
+    $meter = $this->property->meters()->create(['type' => 'electricity', 'label' => 'TNB']);
+    $meter->units()->sync([$this->unit->id]);
+    app(UtilityBillService::class)->record($meter, CarbonImmutable::parse('2026-08-01'), 90);
+
+    $this->travelTo('2026-08-15');
+    $invoice->items()->create(['description' => 'Indah Water', 'amount' => 50]);
+
+    $events = $this->timeline->for($this->property);
+
+    expect(array_column($events, 'type'))->toBe(['extra_charge', 'utility_charge', 'late_fee', 'tenancy_start'])
+        ->and(array_column($events, 'date'))->toBe(['2026-08-15', '2026-08-12', '2026-08-10', '2026-08-01'])
+        ->and($events[0])->toMatchArray(['amount' => '50.00', 'description' => 'Indah Water', 'period' => 'Aug 2026'])
+        ->and($events[1])->toMatchArray(['amount' => '90.00', 'description' => 'TNB (Aug 2026)'])
+        ->and($events[2])->toMatchArray(['amount' => '20.00', 'description' => 'Late payment fee'])
+        // Each charge carries its invoice so it can open the same popup as a payment.
+        ->and($events[2]['invoice']['id'])->toBe($invoice->id)
+        ->and(array_column($events[2]['invoice']['items'], 'description'))
+        ->toContain('Late payment fee', 'TNB (Aug 2026)', 'Indah Water');
+});
+
+test('the rent line is not a charge event, and a voided invoice has no charges', function () {
+    $this->travelTo('2026-08-01');
+    $tenancy = ($this->rent)('2026-08-01');
+    $invoice = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
+
+    expect(array_column($this->timeline->for($this->property), 'type'))->toBe(['tenancy_start']);
+
+    $invoice->items()->create(['description' => 'Indah Water', 'amount' => 50]);
+    $this->invoices->void($invoice);
+
+    expect(array_column($this->timeline->for($this->property), 'type'))->toBe(['tenancy_start']);
 });
 
 test('deposits received and money paid to the tenant sit on the timeline', function () {
@@ -125,6 +172,7 @@ test('a finished tenancy adds a move-out with the deposit outcome', function () 
     expect(array_column($events, 'type'))->toBe(['tenancy_end', 'tenancy_start'])
         ->and($events[0])->toMatchArray([
             'date' => '2026-06-30', 'deposit_status' => 'Refunded', 'tenant' => $tenancy->tenant->name,
+            'tenant_id' => $tenancy->tenant_id,
         ]);
 });
 
