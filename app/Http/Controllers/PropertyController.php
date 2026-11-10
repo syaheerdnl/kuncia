@@ -15,7 +15,6 @@ use App\Services\Ai\GeminiBillReader;
 use App\Services\Reports\PropertyTimeline;
 use App\Support\MalaysianStates;
 use App\Support\MeterData;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -100,7 +99,7 @@ class PropertyController extends Controller
                 'status' => $u->status->value,
                 'tenant' => $u->activeTenancy?->tenant->name,
             ]),
-            'timeline' => $timeline->for($property, CarbonImmutable::today()),
+            'timeline' => $timeline->for($property),
             'unitTypes' => UnitType::options(),
             'meters' => MeterData::forProperty($property),
             'utilityTypes' => UtilityType::options(),

@@ -1,13 +1,15 @@
 <?php
 
+use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use App\Enums\TenancyStatus;
 use App\Models\Property;
 use App\Models\Tenancy;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\InvoiceService;
 use App\Services\Reports\PropertyTimeline;
-use App\Services\Utilities\UtilityBillService;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -17,100 +19,101 @@ beforeEach(function () {
     $this->invoices = app(InvoiceService::class);
     $this->timeline = app(PropertyTimeline::class);
 
-    $this->rent = fn (string $start) => Tenancy::factory()->create([
+    $this->rent = fn (string $start, array $extra = []) => Tenancy::factory()->create(array_merge([
         'unit_id' => $this->unit->id,
         'start_date' => $start,
-        'end_date' => '2027-06-30',
+        'end_date' => null,
         'monthly_rent' => 400,
+        'deposit_amount' => 800,
         'due_day' => 5,
-    ]);
+    ], $extra));
 });
 
-test('each month splits what was billed by type and shows what came in', function () {
-    $this->travelTo('2026-07-01');
+test('events run newest first: payments, then the move-in', function () {
     $tenancy = ($this->rent)('2026-07-01');
-
     $july = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-07-01'));
-    $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
-    $this->invoices->recordPayment($july, 400, PaymentMethod::Transfer, null, CarbonImmutable::parse('2026-07-06'));
+    $august = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
 
-    // August is not paid by the 5th, so it turns overdue and gets the late fee.
-    $this->travelTo('2026-08-20');
-    $this->invoices->markOverdue(CarbonImmutable::today());
+    $this->invoices->recordPayment($july, 400, PaymentMethod::Transfer, 'DuitNow 1', CarbonImmutable::parse('2026-07-06'));
+    // August is paid late, in September: the event sits on the day the money came in.
+    $this->invoices->recordPayment($august, 400, PaymentMethod::Cash, null, CarbonImmutable::parse('2026-09-01'));
 
-    // September has an extra charge and a share of an August meter bill.
-    $september = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-09-01'));
-    $september->items()->create(['description' => 'Indah Water', 'amount' => 50]);
-    $september->recalculateTotal();
+    $events = $this->timeline->for($this->property);
 
-    $meter = $this->property->meters()->create(['type' => 'electricity', 'label' => 'TNB']);
-    $meter->units()->sync([$this->unit->id]);
-    app(UtilityBillService::class)->record($meter, CarbonImmutable::parse('2026-08-01'), 90);
-
-    $this->travelTo('2026-09-02');
-    $rows = $this->timeline->for($this->property, CarbonImmutable::today());
-
-    expect($rows)->toHaveCount(3)
-        ->and(array_column($rows, 'label'))->toBe(['Jul 2026', 'Aug 2026', 'Sep 2026'])
-        ->and($rows[0])->toMatchArray([
-            'rent' => 400.0, 'utilities' => 0.0, 'late_fee' => 0.0, 'other' => 0.0,
-            'billed' => 400.0, 'collected' => 400.0, 'paid' => 1, 'unpaid' => 0, 'overdue' => 0,
+    expect(array_column($events, 'type'))->toBe(['payment', 'payment', 'tenancy_start'])
+        ->and(array_column($events, 'date'))->toBe(['2026-09-01', '2026-07-06', '2026-07-01'])
+        ->and($events[0])->toMatchArray([
+            'amount' => '400.00', 'method' => 'Cash', 'period' => 'Aug 2026', 'unit' => 'A',
+            'tenant' => $tenancy->tenant->name,
         ])
-        ->and($rows[1])->toMatchArray([
-            'rent' => 400.0, 'late_fee' => 20.0, 'billed' => 420.0,
-            'collected' => 0.0, 'paid' => 0, 'overdue' => 1,
-        ])
-        ->and($rows[2])->toMatchArray([
-            'rent' => 400.0, 'utilities' => 90.0, 'other' => 50.0, 'billed' => 540.0,
-            'collected' => 0.0, 'unpaid' => 1,
+        ->and($events[1])->toMatchArray(['method' => 'Transfer', 'reference' => 'DuitNow 1', 'period' => 'Jul 2026'])
+        ->and($events[2])->toMatchArray(['amount' => '400.00', 'deposit' => '800.00', 'tenant' => $tenancy->tenant->name]);
+});
+
+test('a finished tenancy adds a move-out with the deposit outcome', function () {
+    $tenancy = ($this->rent)('2026-01-01', [
+        'status' => TenancyStatus::Ended,
+        'end_date' => '2026-06-30',
+        'deposit_status' => DepositStatus::Refunded,
+    ]);
+
+    $events = $this->timeline->for($this->property);
+
+    expect(array_column($events, 'type'))->toBe(['tenancy_end', 'tenancy_start'])
+        ->and($events[0])->toMatchArray([
+            'date' => '2026-06-30', 'deposit_status' => 'Refunded', 'tenant' => $tenancy->tenant->name,
         ]);
 });
 
-test('a late payment counts in the month it arrived, not the month it was owed', function () {
-    $this->travelTo('2026-08-01');
-    $tenancy = ($this->rent)('2026-08-01');
-    $august = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
+test('a running tenancy with a fixed end date has no move-out yet', function () {
+    ($this->rent)('2026-01-01', ['end_date' => '2099-12-31']);
 
-    $this->travelTo('2026-08-20');
-    $this->invoices->markOverdue(CarbonImmutable::today()); // total is now 420 with the late fee
-    $this->invoices->recordPayment($august->fresh(), 420, PaymentMethod::Cash, null, CarbonImmutable::parse('2026-09-01'));
-
-    $this->travelTo('2026-09-02');
-    $rows = $this->timeline->for($this->property, CarbonImmutable::today());
-
-    expect($rows)->toHaveCount(2)
-        ->and($rows[0])->toMatchArray(['billed' => 420.0, 'collected' => 0.0, 'paid' => 1])
-        ->and($rows[1])->toMatchArray(['billed' => 0.0, 'collected' => 420.0]);
+    expect(array_column($this->timeline->for($this->property), 'type'))->toBe(['tenancy_start']);
 });
 
-test('voided invoices and other properties are left out', function () {
-    $this->travelTo('2026-08-01');
-    $tenancy = ($this->rent)('2026-08-01');
-    $voided = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
-    $this->invoices->void($voided);
+test('on the same day the move-out comes before payments, and the move-in last', function () {
+    $tenancy = ($this->rent)('2026-07-01', ['status' => TenancyStatus::Ended, 'end_date' => '2026-07-01']);
+    $invoice = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-07-01'));
+    $this->invoices->recordPayment($invoice, 400, PaymentMethod::Cash, null, CarbonImmutable::parse('2026-07-01'));
 
-    $elsewhere = Tenancy::factory()->create(['start_date' => '2026-08-01', 'end_date' => '2027-06-30']);
-    $this->invoices->generateFor($elsewhere, CarbonImmutable::parse('2026-08-01'));
-
-    expect($this->timeline->for($this->property, CarbonImmutable::today()))->toBe([]);
+    expect(array_column($this->timeline->for($this->property), 'type'))
+        ->toBe(['tenancy_end', 'payment', 'tenancy_start']);
 });
 
-test('a property with no invoices has an empty timeline', function () {
-    expect($this->timeline->for($this->property, CarbonImmutable::today()))->toBe([]);
+test('pending and failed payments, and other properties, are left out', function () {
+    $tenancy = ($this->rent)('2026-07-01');
+    $invoice = $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-07-01'));
+    $invoice->payments()->create(['amount' => 400, 'method' => PaymentMethod::ToyyibPay, 'status' => PaymentStatus::Pending]);
+    $invoice->payments()->create(['amount' => 400, 'method' => PaymentMethod::ToyyibPay, 'status' => PaymentStatus::Failed]);
+
+    $elsewhere = Tenancy::factory()->create(['start_date' => '2026-07-01', 'end_date' => null]);
+    $this->invoices->recordPayment(
+        $this->invoices->generateFor($elsewhere, CarbonImmutable::parse('2026-07-01')),
+        400, PaymentMethod::Cash, null, CarbonImmutable::parse('2026-07-02'),
+    );
+
+    expect(array_column($this->timeline->for($this->property), 'type'))->toBe(['tenancy_start']);
 });
 
-test('the property page carries the timeline for its owner only', function () {
-    $this->travelTo('2026-08-01');
-    $tenancy = ($this->rent)('2026-08-01');
-    $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-08-01'));
+test('a property with no history has an empty timeline', function () {
+    expect($this->timeline->for($this->property))->toBe([]);
+});
+
+test('the page carries the events for the owner only', function () {
+    $tenancy = ($this->rent)('2026-07-01');
+    $this->invoices->recordPayment(
+        $this->invoices->generateFor($tenancy, CarbonImmutable::parse('2026-07-01')),
+        400, PaymentMethod::Transfer, null, CarbonImmutable::parse('2026-07-06'),
+    );
 
     $this->actingAs($this->property->owner)
         ->get(route('properties.show', $this->property))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('properties/show')
-            ->has('timeline', 1)
-            ->where('timeline.0.rent', 400)
+            ->has('timeline', 2)
+            ->where('timeline.0.type', 'payment')
+            ->where('timeline.1.type', 'tenancy_start')
         );
 
     $this->actingAs(User::factory()->landlord()->create())
