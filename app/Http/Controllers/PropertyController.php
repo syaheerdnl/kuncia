@@ -9,6 +9,7 @@ use App\Enums\UnitType;
 use App\Enums\UtilityType;
 use App\Http\Requests\Property\PropertyRequest;
 use App\Models\Property;
+use App\Models\Tenancy;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\Ai\GeminiBillReader;
@@ -100,6 +101,18 @@ class PropertyController extends Controller
                 'tenant' => $u->activeTenancy?->tenant->name,
             ]),
             'timeline' => $timeline->for($property),
+            // Who a deposit or payout can be recorded against: every tenancy here, newest first.
+            'transactionTenancies' => Tenancy::query()
+                ->whereHas('unit', fn ($q) => $q->where('property_id', $property->id))
+                ->with('tenant', 'unit')
+                ->orderByDesc('start_date')
+                ->get()
+                ->map(fn (Tenancy $t) => [
+                    'id' => $t->id,
+                    'label' => $t->tenant->name.' · '.$t->unit->code.($t->status === TenancyStatus::Active ? '' : ' (ended)'),
+                ])
+                ->values()
+                ->all(),
             'unitTypes' => UnitType::options(),
             'meters' => MeterData::forProperty($property),
             'utilityTypes' => UtilityType::options(),

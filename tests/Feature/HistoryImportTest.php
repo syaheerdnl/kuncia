@@ -5,6 +5,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\TransactionType;
 use App\Enums\UnitStatus;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\Tenancy;
@@ -73,6 +74,21 @@ test('imports the tenant, tenancy and paid invoices', function () {
     $payment = Payment::where('invoice_id', $invoices[1]->id)->firstOrFail();
     expect($payment->method->value)->toBe('cash')
         ->and($payment->reference)->toBe('Feb + water');
+});
+
+test('an imported extra is dated with the payment date, and a repeat run repairs a wrong one', function () {
+    $file = writeImport(($this->data)());
+
+    $this->artisan('kuncia:import-history', ['file' => $file])->assertSuccessful();
+
+    $extra = InvoiceItem::where('description', 'Indah Water')->firstOrFail();
+    expect($extra->created_at->toDateString())->toBe('2025-02-27'); // the payment date, not today
+
+    // An earlier import dated it with the import day: a repeat run puts it right.
+    $extra->forceFill(['created_at' => now(), 'updated_at' => now()])->save();
+    $this->artisan('kuncia:import-history', ['file' => $file])->assertSuccessful();
+
+    expect($extra->fresh()->created_at->toDateString())->toBe('2025-02-27');
 });
 
 test('running it twice creates nothing new', function () {

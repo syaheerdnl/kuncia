@@ -218,13 +218,29 @@ class HistoryImporter
             ]);
         }
 
+        $paidAt = CarbonImmutable::parse((string) $payment['paid_at']);
+
+        // The timeline dates a charge by when it was added, so an imported extra gets
+        // the real payment date instead of the day of the import. Repeat runs also
+        // correct extras that an earlier import dated with the import day.
         if ($invoice->status === InvoiceStatus::Paid) {
+            foreach ($payment['extras'] ?? [] as $extra) {
+                $invoice->items()
+                    ->where('description', $extra['description'])
+                    ->update(['created_at' => $paidAt, 'updated_at' => $paidAt]);
+            }
+
             return false;
         }
 
         foreach ($payment['extras'] ?? [] as $extra) {
             if (! $invoice->items()->where('description', $extra['description'])->exists()) {
-                $invoice->items()->create($extra);
+                $invoice->items()->forceCreate([
+                    'description' => $extra['description'],
+                    'amount' => $extra['amount'],
+                    'created_at' => $paidAt,
+                    'updated_at' => $paidAt,
+                ]);
             }
         }
         $invoice->recalculateTotal();
@@ -236,7 +252,7 @@ class HistoryImporter
             (float) $payment['amount'],
             PaymentMethod::from((string) ($payment['method'] ?? 'transfer')),
             $payment['reference'] ?? null,
-            CarbonImmutable::parse((string) $payment['paid_at']),
+            $paidAt,
         );
 
         return true;

@@ -12,6 +12,9 @@ export type PropertyFormData = {
     cover_url: string | null;
 };
 
+/** A tenancy a deposit or payout can be recorded against (label is "Tenant · Unit"). */
+export type TenancyOption = { id: number; label: string };
+
 /** The invoice a payment was for, shown in the timeline popup. */
 export type TimelineInvoice = {
     id: number;
@@ -41,8 +44,28 @@ export type PaymentEvent = {
     invoice: TimelineInvoice;
 };
 
+/** A late fee, a utility bill share or an extra charge added to an invoice. */
+type ChargeEvent<T extends 'late_fee' | 'utility_charge' | 'extra_charge'> = {
+    type: T;
+    date: string;
+    amount: string;
+    description: string;
+    period: string;
+    tenant: string;
+    unit: string;
+    invoice: TimelineInvoice;
+};
+
+/** Events that open the invoice popup. */
+export type InvoiceEvent =
+    | PaymentEvent
+    | ChargeEvent<'late_fee'>
+    | ChargeEvent<'utility_charge'>
+    | ChargeEvent<'extra_charge'>;
+
 /** Money that is not rent: a deposit received, or money paid out to the tenant. */
 type TransactionEvent<T extends 'deposit_received' | 'paid_to_tenant'> = {
+    id: number;
     type: T;
     date: string;
     amount: string;
@@ -53,7 +76,7 @@ type TransactionEvent<T extends 'deposit_received' | 'paid_to_tenant'> = {
 
 /** One thing that happened at a property (see PropertyTimeline.php). Dates are Y-m-d. */
 export type TimelineEvent =
-    | PaymentEvent
+    | InvoiceEvent
     | TransactionEvent<'deposit_received'>
     | TransactionEvent<'paid_to_tenant'>
     | {
@@ -61,6 +84,7 @@ export type TimelineEvent =
           date: string;
           amount: string;
           deposit: string;
+          tenant_id: number;
           tenant: string;
           unit: string;
       }
@@ -70,6 +94,7 @@ export type TimelineEvent =
           amount: string;
           deposit: string;
           deposit_status: string;
+          tenant_id: number;
           tenant: string;
           unit: string;
       };

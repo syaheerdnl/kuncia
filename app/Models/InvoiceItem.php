@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\InvoiceItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $invoice_id
  * @property string $description
  * @property string $amount
+ * @property CarbonImmutable|null $created_at
  */
 #[Fillable(['invoice_id', 'description', 'amount'])]
 class InvoiceItem extends Model

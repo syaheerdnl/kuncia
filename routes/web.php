@@ -9,6 +9,7 @@ use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TenancyController;
+use App\Http\Controllers\TenancyTransactionController;
 use App\Http\Controllers\Tenant\MyInvoiceController;
 use App\Http\Controllers\Tenant\MyMaintenanceController;
 use App\Http\Controllers\Tenant\MyUnitController;
@@ -50,6 +51,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('meters/{meter}/scan', [UtilityBillController::class, 'scan'])->name('meters.scan');
         Route::delete('meters/{meter}/scan', [UtilityBillController::class, 'dismiss'])->name('meters.scan.dismiss');
         Route::delete('utility-bills/{bill}', [UtilityBillController::class, 'destroy'])->name('utility-bills.destroy');
+        Route::post('properties/{property}/transactions', [TenancyTransactionController::class, 'store'])->name('transactions.store');
+        Route::delete('transactions/{transaction}', [TenancyTransactionController::class, 'destroy'])->name('transactions.destroy');
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     });
