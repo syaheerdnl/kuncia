@@ -4,18 +4,23 @@ namespace App\Services\Reports;
 
 use App\Enums\PaymentStatus;
 use App\Enums\TenancyStatus;
+use App\Enums\TransactionType;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\Tenancy;
+use App\Models\TenancyTransaction;
 
 /**
- * What happened at one property, newest first: money received and tenants
- * moving in or out. The page shows them as a vertical timeline.
+ * What happened at one property, newest first: rent received, deposits received,
+ * money paid out to a tenant, and tenants moving in or out. The page shows them
+ * as a vertical timeline, and a payment opens a popup with its invoice.
  *
  * Every event is wrapped with a sort key. On the same day the order reads
- * backwards in time: move-out first, then payments, then the move-in.
+ * backwards in time: move-out, paid out, payments, deposit, then the move-in.
  *
- * @phpstan-type Event array<string, string|null>
+ * @phpstan-type Event array<string, mixed>
  * @phpstan-type Sortable array{sort: string, event: Event}
  */
 class PropertyTimeline
@@ -30,6 +35,7 @@ class PropertyTimeline
     {
         $all = array_merge(
             $this->payments($property),
+            $this->transactions($property),
             $this->tenancyStarts($property),
             $this->tenancyEnds($property),
         );
@@ -49,7 +55,7 @@ class PropertyTimeline
             ->where('status', PaymentStatus::Success)
             ->whereNotNull('paid_at')
             ->whereHas('invoice.tenancy.unit', fn ($q) => $q->where('property_id', $property->id))
-            ->with('invoice.tenancy.tenant', 'invoice.tenancy.unit')
+            ->with('invoice.tenancy.tenant', 'invoice.tenancy.unit', 'invoice.items', 'invoice.payments')
             ->get();
 
         $out = [];
@@ -63,7 +69,7 @@ class PropertyTimeline
             $tenancy = $payment->invoice->tenancy;
 
             $out[] = [
-                'sort' => $date.'-2-'.$this->pad($payment->id),
+                'sort' => $date.'-3-'.$this->pad($payment->id),
                 'event' => [
                     'type' => 'payment',
                     'date' => $date,
@@ -73,6 +79,72 @@ class PropertyTimeline
                     'period' => $payment->invoice->period->format('M Y'),
                     'tenant' => $tenancy->tenant->name,
                     'unit' => $tenancy->unit->code,
+                    'invoice' => $this->invoice($payment->invoice),
+                ],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * What the popup shows. Only successful payments count as payments on the invoice.
+     *
+     * @return array<string, mixed>
+     */
+    private function invoice(Invoice $invoice): array
+    {
+        $payments = [];
+
+        foreach ($invoice->payments->sortBy('id') as $p) {
+            if ($p->status === PaymentStatus::Success && $p->paid_at !== null) {
+                $payments[] = [
+                    'amount' => $p->amount,
+                    'method' => $p->method->label(),
+                    'paid_at' => $p->paid_at->toDateString(),
+                    'reference' => $p->reference,
+                ];
+            }
+        }
+
+        return [
+            'id' => $invoice->id,
+            'invoice_no' => $invoice->invoice_no,
+            'period' => $invoice->period->format('F Y'),
+            'status' => $invoice->status->value,
+            'due_date' => $invoice->due_date->toDateString(),
+            'total' => $invoice->total,
+            'items' => $invoice->items
+                ->map(fn (InvoiceItem $i) => ['description' => $i->description, 'amount' => $i->amount])
+                ->values()
+                ->all(),
+            'payments' => $payments,
+        ];
+    }
+
+    /** @return list<Sortable> */
+    private function transactions(Property $property): array
+    {
+        $transactions = TenancyTransaction::query()
+            ->whereHas('tenancy.unit', fn ($q) => $q->where('property_id', $property->id))
+            ->with('tenancy.tenant', 'tenancy.unit')
+            ->get();
+
+        $out = [];
+
+        foreach ($transactions as $tx) {
+            $date = $tx->occurred_on->toDateString();
+            $order = $tx->type === TransactionType::DepositReceived ? '2' : '4';
+
+            $out[] = [
+                'sort' => $date.'-'.$order.'-'.$this->pad($tx->id),
+                'event' => [
+                    'type' => $tx->type->value,
+                    'date' => $date,
+                    'amount' => $tx->amount,
+                    'note' => $tx->note,
+                    'tenant' => $tx->tenancy->tenant->name,
+                    'unit' => $tx->tenancy->unit->code,
                 ],
             ];
         }
@@ -121,7 +193,7 @@ class PropertyTimeline
             $date = $tenancy->end_date->toDateString();
 
             $out[] = [
-                'sort' => $date.'-3-'.$this->pad($tenancy->id),
+                'sort' => $date.'-5-'.$this->pad($tenancy->id),
                 'event' => [
                     'type' => 'tenancy_end',
                     'date' => $date,

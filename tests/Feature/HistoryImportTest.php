@@ -2,11 +2,13 @@
 
 use App\Enums\DepositStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\TransactionType;
 use App\Enums\UnitStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\Tenancy;
+use App\Models\TenancyTransaction;
 use App\Models\Unit;
 use App\Models\User;
 
@@ -136,6 +138,49 @@ test('an email that belongs to another account is refused', function () {
     $this->artisan('kuncia:import-history', ['file' => writeImport(($this->data)())])
         ->expectsOutputToContain('already belongs to a different account')
         ->assertFailed();
+});
+
+test('deposit receipts and money paid out are imported once', function () {
+    $data = ($this->data)(['transactions' => [
+        ['type' => 'deposit_received', 'date' => '2024-12-18', 'amount' => 850, 'note' => 'first deposit'],
+        ['type' => 'deposit_received', 'date' => '2025-01-25', 'amount' => 850],
+        ['type' => 'paid_to_tenant', 'date' => '2026-11-02', 'amount' => 4500, 'note' => 'roof repair'],
+    ]]);
+    $file = writeImport($data);
+
+    $this->artisan('kuncia:import-history', ['file' => $file])
+        ->expectsOutputToContain('3 other transaction(s) added, 0 already there')
+        ->assertSuccessful();
+
+    $this->artisan('kuncia:import-history', ['file' => $file])
+        ->expectsOutputToContain('0 other transaction(s) added, 3 already there')
+        ->assertSuccessful();
+
+    $rows = TenancyTransaction::orderBy('occurred_on')->get();
+    expect($rows)->toHaveCount(3)
+        ->and($rows[0]->type)->toBe(TransactionType::DepositReceived)
+        ->and($rows[0]->occurred_on->toDateString())->toBe('2024-12-18')
+        ->and($rows[0]->amount)->toBe('850.00')
+        ->and($rows[0]->note)->toBe('first deposit')
+        ->and($rows[2]->type)->toBe(TransactionType::PaidToTenant)
+        ->and($rows[2]->amount)->toBe('4500.00');
+});
+
+test('a dry run does not save transactions', function () {
+    $data = ($this->data)(['transactions' => [['type' => 'paid_to_tenant', 'date' => '2026-11-02', 'amount' => 4500]]]);
+
+    $this->artisan('kuncia:import-history', ['file' => writeImport($data), '--dry-run' => true])->assertSuccessful();
+
+    expect(TenancyTransaction::count())->toBe(0);
+});
+
+test('an unknown transaction type is refused and nothing is saved', function () {
+    $data = ($this->data)(['transactions' => [['type' => 'gift', 'date' => '2026-11-02', 'amount' => 10]]]);
+
+    $this->artisan('kuncia:import-history', ['file' => writeImport($data)])->assertFailed();
+
+    expect(TenancyTransaction::count())->toBe(0)
+        ->and(Tenancy::count())->toBe(0);
 });
 
 test('imported months never get a late fee from the nightly job', function () {
