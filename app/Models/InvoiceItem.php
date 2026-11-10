@@ -21,6 +21,11 @@ class InvoiceItem extends Model
     /** @use HasFactory<InvoiceItemFactory> */
     use HasFactory;
 
+    /** Rent lines read "Monthly rent - October 2026". */
+    public const RENT_PREFIX = 'Monthly rent';
+
+    public const LATE_FEE = 'Late payment fee';
+
     protected function casts(): array
     {
         return ['amount' => 'decimal:2'];

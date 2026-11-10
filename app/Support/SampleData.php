@@ -15,6 +15,7 @@ use App\Enums\UnitType;
 use App\Enums\UserRole;
 use App\Enums\UtilityType;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\MaintenanceRequest;
 use App\Models\Tenancy;
 use App\Models\Unit;
@@ -178,11 +179,11 @@ class SampleData
             'paid_at' => $status === InvoiceStatus::Paid ? $due->copy()->subDays(2) : null,
         ]);
 
-        $invoice->items()->create(['description' => 'Monthly rent - '.$period->format('F Y'), 'amount' => $tenancy->monthly_rent]);
+        $invoice->items()->create(['description' => InvoiceItem::RENT_PREFIX.' - '.$period->format('F Y'), 'amount' => $tenancy->monthly_rent]);
         $invoice->items()->create(['description' => 'Utilities (water & electric)', 'amount' => $utilities]);
 
         if ($status === InvoiceStatus::Overdue) {
-            $invoice->items()->create(['description' => 'Late payment fee', 'amount' => config('kuncia.late_fee', 20)]);
+            $invoice->items()->create(['description' => InvoiceItem::LATE_FEE, 'amount' => config('kuncia.late_fee', 20)]);
         }
 
         $invoice->recalculateTotal();
