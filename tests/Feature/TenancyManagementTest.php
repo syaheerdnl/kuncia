@@ -46,6 +46,10 @@ test('phone must be a Malaysian mobile number', function () {
 });
 
 test('tenant list shows only my tenants and searches', function () {
+    // The setup tenant has a random fake name and email. Pin them, or a search for "zul"
+    // can match both tenants on an unlucky run.
+    $this->tenant->update(['name' => 'Aisyah Rahman', 'email' => 'aisyah@example.test']);
+
     User::factory()->tenant()->create(['name' => 'Someone Else']); // other landlord
     User::factory()->tenant()->create(['name' => 'Zul Hakimi', 'landlord_id' => $this->landlord->id]);
 
