@@ -2,6 +2,7 @@
 
 use App\Enums\DepositStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\TenancyStatus;
 use App\Enums\TransactionType;
 use App\Enums\UnitStatus;
 use App\Models\Invoice;
@@ -181,6 +182,64 @@ test('deposit receipts and money paid out are imported once', function () {
         ->and($rows[2]->type)->toBe(TransactionType::PaidToTenant)
         ->and($rows[2]->amount)->toBe('4500.00');
 });
+
+test('a month can carry its own rent when the rent changed', function () {
+    $data = ($this->data)(['monthly_rent' => 850, 'payments' => [
+        ['period' => '2025-01', 'paid_at' => '2025-01-25', 'amount' => 1000, 'rent' => 1000],
+        ['period' => '2025-02', 'paid_at' => '2025-02-25', 'amount' => 850], // no override: the tenancy rent
+    ]]);
+
+    $this->artisan('kuncia:import-history', ['file' => writeImport($data)])->assertSuccessful();
+
+    $invoices = Invoice::orderBy('period')->get();
+    expect($invoices->pluck('total')->all())->toBe(['1000.00', '850.00'])
+        ->and($invoices->pluck('status')->unique()->all())->toBe([InvoiceStatus::Paid])
+        ->and($invoices[0]->items()->first()->amount)->toBe('1000.00');
+});
+
+test('a finished contract is closed so the same tenant can start the next one on the unit', function () {
+    $first = ($this->data)()['tenancies'][0];
+    $first['end_date'] = '2025-03-31';
+    $first['deposit_status'] = 'held';
+    $first['payments'] = [['period' => '2025-01', 'paid_at' => '2025-01-25', 'amount' => 850]];
+
+    $second = $first;
+    unset($second['end_date'], $second['deposit_status']);
+    $second['start_date'] = '2025-05-01';
+    $second['deposit'] = 2400;
+    $second['payments'] = [['period' => '2025-05', 'paid_at' => '2025-05-08', 'amount' => 850]];
+
+    $data = ['landlord' => 'landlord@example.test', 'tenancies' => [$first, $second]];
+    $file = writeImport($data);
+
+    $this->artisan('kuncia:import-history', ['file' => $file])
+        ->expectsOutputToContain('Tenancy ended on 2025-03-31')
+        ->assertSuccessful();
+
+    $tenancies = Tenancy::orderBy('start_date')->get();
+    expect(User::where('email', 'ali@example.test')->count())->toBe(1)
+        ->and($tenancies)->toHaveCount(2)
+        ->and($tenancies[0]->tenant_id)->toBe($tenancies[1]->tenant_id)
+        ->and($tenancies[0]->status)->toBe(TenancyStatus::Ended)
+        ->and($tenancies[0]->end_date->toDateString())->toBe('2025-03-31')
+        ->and($tenancies[0]->deposit_status)->toBe(DepositStatus::Held)
+        ->and($tenancies[1]->status)->toBe(TenancyStatus::Active)
+        ->and($tenancies[1]->deposit_amount)->toBe('2400.00')
+        ->and($this->unit->fresh()->status)->toBe(UnitStatus::Occupied); // the second contract is running
+
+    // Running it again changes nothing, and does not trip over the unit being occupied.
+    $this->artisan('kuncia:import-history', ['file' => $file])->assertSuccessful();
+    expect(Tenancy::count())->toBe(2)->and(Invoice::count())->toBe(2);
+});
+
+test('an end date before the start or an unknown deposit status is refused', function (array $change) {
+    $this->artisan('kuncia:import-history', ['file' => writeImport(($this->data)($change))])->assertFailed();
+
+    expect(Tenancy::count())->toBe(0);
+})->with([
+    'ends before it starts' => [['end_date' => '2024-12-31']],
+    'unknown deposit status' => [['end_date' => '2025-06-30', 'deposit_status' => 'lost']],
+]);
 
 test('a dry run does not save transactions', function () {
     $data = ($this->data)(['transactions' => [['type' => 'paid_to_tenant', 'date' => '2026-11-02', 'amount' => 4500]]]);

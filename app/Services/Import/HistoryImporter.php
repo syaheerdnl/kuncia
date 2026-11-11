@@ -2,11 +2,14 @@
 
 namespace App\Services\Import;
 
+use App\Enums\DepositStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\TenancyStatus;
 use App\Enums\TransactionType;
 use App\Enums\UserRole;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Property;
 use App\Models\Tenancy;
 use App\Models\Unit;
@@ -116,6 +119,14 @@ class HistoryImporter
 
         if (! empty($row['transactions'])) {
             $lines[] = $this->importTransactions($tenancy, $row['transactions']);
+        }
+
+        // A finished contract is closed last, after its months are in, which frees the unit
+        // so the next contract on it can start. A tenancy that is already closed is left alone.
+        if (! empty($row['end_date']) && $tenancy->status === TenancyStatus::Active) {
+            $end = CarbonImmutable::parse((string) $row['end_date']);
+            $this->tenancies->end($tenancy, $end, DepositStatus::from((string) ($row['deposit_status'] ?? DepositStatus::Held->value)));
+            $lines[] = "  Tenancy ended on {$end->toDateString()}, unit is vacant again.";
         }
 
         return $lines;
@@ -233,6 +244,14 @@ class HistoryImporter
             return false;
         }
 
+        // The rent can change over a tenancy (a reduction, say). A month may carry its own rent;
+        // otherwise it is the tenancy's rent.
+        if (isset($payment['rent'])) {
+            $invoice->items()
+                ->where('description', 'like', InvoiceItem::RENT_PREFIX.'%')
+                ->update(['amount' => $payment['rent']]);
+        }
+
         foreach ($payment['extras'] ?? [] as $extra) {
             if (! $invoice->items()->where('description', $extra['description'])->exists()) {
                 $invoice->items()->forceCreate([
@@ -288,6 +307,9 @@ class HistoryImporter
             'tenancies.*.payments' => ['required', 'array', 'min:1'],
             'tenancies.*.payments.*.period' => ['required', 'date_format:Y-m'],
             'tenancies.*.payments.*.paid_at' => ['required', 'date_format:Y-m-d'],
+            'tenancies.*.end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:tenancies.*.start_date'],
+            'tenancies.*.deposit_status' => ['nullable', Rule::in(DepositStatus::values())],
+            'tenancies.*.payments.*.rent' => ['nullable', 'numeric', 'min:0.01'],
             'tenancies.*.payments.*.amount' => ['required', 'numeric', 'min:0.01'],
             'tenancies.*.payments.*.method' => ['nullable', Rule::in([PaymentMethod::Cash->value, PaymentMethod::Transfer->value])],
             'tenancies.*.payments.*.reference' => ['nullable', 'string', 'max:100'],
