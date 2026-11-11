@@ -144,11 +144,9 @@ class HistoryImporter
         foreach ($transactions as $tx) {
             $type = TransactionType::from((string) $tx['type']);
 
-            // whereDate: a date column may be stored with a time part, so compare the day only.
+            $note = isset($tx['note']) ? (string) $tx['note'] : null;
             $exists = $tenancy->transactions()
-                ->where('type', $type->value)
-                ->whereDate('occurred_on', (string) $tx['date'])
-                ->where('amount', $tx['amount'])
+                ->sameEntry($type->value, (string) $tx['date'], $tx['amount'], $note)
                 ->exists();
 
             if ($exists) {
