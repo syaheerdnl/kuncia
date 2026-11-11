@@ -51,15 +51,18 @@ class StoreTransactionRequest extends FormRequest
                     return;
                 }
 
-                // The table keeps one row per tenancy, kind, day and amount.
+                // The table keeps one row per tenancy, kind, day, amount and note.
                 $exists = Tenancy::find($this->integer('tenancy_id'))?->transactions()
-                    ->where('type', $this->string('type')->value())
-                    ->whereDate('occurred_on', $this->string('occurred_on')->value())
-                    ->where('amount', $this->string('amount')->value())
+                    ->sameEntry(
+                        $this->string('type')->value(),
+                        $this->string('occurred_on')->value(),
+                        $this->string('amount')->value(),
+                        $this->filled('note') ? $this->string('note')->value() : null,
+                    )
                     ->exists();
 
                 if ($exists) {
-                    $validator->errors()->add('amount', 'This exact entry (same tenant, kind, date and amount) is already recorded.');
+                    $validator->errors()->add('amount', 'This exact entry (same tenant, kind, date, amount and note) is already recorded.');
                 }
             },
         ];

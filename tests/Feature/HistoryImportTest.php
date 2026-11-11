@@ -241,6 +241,26 @@ test('an end date before the start or an unknown deposit status is refused', fun
     'unknown deposit status' => [['end_date' => '2025-06-30', 'deposit_status' => 'lost']],
 ]);
 
+test('two deposits of the same amount on one day are both imported when their notes differ', function () {
+    $data = ($this->data)(['transactions' => [
+        ['type' => 'deposit_received', 'date' => '2026-05-20', 'amount' => 100, 'note' => 'Electricity deposit (TNB)'],
+        ['type' => 'deposit_received', 'date' => '2026-05-20', 'amount' => 100, 'note' => 'Water deposit (air)'],
+    ]]);
+    $file = writeImport($data);
+
+    $this->artisan('kuncia:import-history', ['file' => $file])
+        ->expectsOutputToContain('2 other transaction(s) added, 0 already there')
+        ->assertSuccessful();
+
+    // Running it again adds nothing: each one is recognised by its own note.
+    $this->artisan('kuncia:import-history', ['file' => $file])
+        ->expectsOutputToContain('0 other transaction(s) added, 2 already there')
+        ->assertSuccessful();
+
+    expect(TenancyTransaction::orderBy('id')->pluck('note')->all())
+        ->toBe(['Electricity deposit (TNB)', 'Water deposit (air)']);
+});
+
 test('a dry run does not save transactions', function () {
     $data = ($this->data)(['transactions' => [['type' => 'paid_to_tenant', 'date' => '2026-11-02', 'amount' => 4500]]]);
 

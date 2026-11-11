@@ -79,6 +79,25 @@ test('a tenancy from another property cannot be used', function () {
     expect(TenancyTransaction::count())->toBe(0);
 });
 
+test('two deposits of the same amount on one day are separate entries when their notes differ', function () {
+    $electricity = ['amount' => '100', 'note' => 'Electricity deposit (TNB)'] + $this->valid;
+    $water = ['amount' => '100', 'note' => 'Water deposit (air)'] + $this->valid;
+
+    ($this->record)($electricity)->assertSessionHasNoErrors();
+    ($this->record)($water)->assertSessionHasNoErrors();
+
+    expect(TenancyTransaction::orderBy('id')->pluck('note')->all())
+        ->toBe(['Electricity deposit (TNB)', 'Water deposit (air)']);
+
+    // The same entry again, with the same note, is still refused.
+    ($this->record)($water)->assertSessionHasErrors('amount');
+    // And so is one with no note when an entry with no note already exists.
+    ($this->record)(['note' => null] + $this->valid)->assertSessionHasNoErrors();
+    ($this->record)(['note' => null] + $this->valid)->assertSessionHasErrors('amount');
+
+    expect(TenancyTransaction::count())->toBe(3);
+});
+
 test('the exact same entry cannot be recorded twice', function () {
     ($this->record)($this->valid)->assertSessionHasNoErrors();
     ($this->record)($this->valid)->assertSessionHasErrors('amount');
